@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/check_backuplog.py",
+            "shell": "bash",
+            "timeout": 15,
+            "statusMessage": "backuplog.json 구조 검증 중..."
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/quick_quality_check.py",
+            "shell": "bash",
+            "timeout": 25,
+            "statusMessage": "코드 길이/lint/build 빠른 검사 중..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/check_stack_decided.py",
+            "shell": "bash",
+            "timeout": 15,
+            "statusMessage": "기술 스택 결정 여부 확인 중..."
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep|Glob|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/guard_backlog_read.py",
+            "shell": "bash",
+            "timeout": 15,
+            "statusMessage": "기준 백로그 직접 읽기 여부 확인 중..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/stop_quality_gate.py",
+            "shell": "bash",
+            "timeout": 60,
+            "statusMessage": "전체 코드 길이/lint/build 검사 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

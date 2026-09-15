@@ -1,0 +1,14 @@
+{
+  "price_decline": {
+    "observation_window_days": 10,
+    "decline_pct_threshold": -5.0
+  },
+  "market_context": {
+    "observation_window_days": 10,
+    "decline_pct_threshold": -3.0
+  },
+  "reduce_position": {
+    "observation_window_days": 10,
+    "decline_pct_threshold": -8.0
+  }
+}

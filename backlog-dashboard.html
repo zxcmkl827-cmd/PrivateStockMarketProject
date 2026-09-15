@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>백로그 대시보드</title>
+<style>
+  :root { color-scheme: light dark; --err:#b3261e; --warn:#8a5a00; --ok:#1e6b3a; --bd:#ccc; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12px 16px; background:#fafafa; color:#111; }
+  @media (prefers-color-scheme: dark) { body { background:#1c1c1e; color:#eee; } .card,.row,.modal-box{background:#2a2a2c!important;border-color:#444!important;} }
+  h1 { font-size: 1.1rem; margin: 4px 0 12px; }
+  header, section { margin-bottom: 14px; }
+  .card { border: 1px solid var(--bd); border-radius: 8px; padding: 10px 12px; background: #fff; }
+  button { cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--bd); background:#fff; }
+  input[type=text] { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--bd); width: 220px; }
+  .muted { color: #777; font-size: .85em; }
+  .hint { color:#777; font-size:.8em; margin-top:4px; }
+  .err { color: var(--err); }
+  .warn { color: var(--warn); }
+  .ok { color: var(--ok); }
+  .pill { display:inline-block; border:1px solid var(--bd); border-radius:999px; padding:1px 8px; margin:2px 4px 2px 0; font-size:.85em; }
+  .layout { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
+  #taskList { flex: 1 1 320px; min-width: 260px; max-height: 70vh; overflow:auto; }
+  #detail { flex: 2 1 420px; min-width: 300px; }
+  .row { display:flex; justify-content:space-between; gap:8px; border:1px solid var(--bd); border-radius:6px; padding:6px 8px; margin-bottom:6px; background:#fff; }
+  .row:hover { outline: 2px solid #888; cursor:pointer; }
+  .row.selected { outline: 2px solid #2563eb; }
+  .field { margin:8px 0; }
+  .field .label { font-weight:600; font-size:.85em; }
+  .field .value { white-space: pre-wrap; word-break: break-word; }
+  .log-entry { border-left:3px solid var(--bd); padding-left:8px; margin-bottom:6px; }
+  table { border-collapse: collapse; width:100%; }
+  th, td { text-align:left; border-bottom:1px solid var(--bd); padding:3px 6px; font-size:.9em; }
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; }
+  .modal-box { background:#fff; border:1px solid var(--bd); border-radius:8px; padding:14px; max-width:80vw; max-height:80vh; overflow:auto; }
+  pre.doc { white-space:pre-wrap; word-break:break-word; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<h1>백로그 대시보드 (읽기 전용)</h1>
+
+<header class="card">
+  <button id="pickBtn" type="button">JSON 파일 선택</button>
+  <span class="hint">같은 파일을 다시 선택해도 최신 내용으로 새로고침됩니다. 이 화면은 파일을 절대 수정하거나 어디로도 전송하지 않습니다.</span>
+  <div id="fileInfo" class="muted" style="margin-top:8px;">아직 파일을 선택하지 않았습니다.</div>
+  <div id="fatalError" class="err" hidden></div>
+</header>
+
+<section id="summary" class="card" hidden></section>
+<section id="integrity" class="card" hidden></section>
+
+<section id="controls" class="card" hidden>
+  <label>상태 필터: <select id="statusFilter"><option value="ALL">전체</option></select></label>
+  &nbsp;&nbsp;
+  <label>검색(ID·제목·설명): <input type="text" id="searchBox" placeholder="예: P2.4, 뉴스"></label>
+</section>
+
+<div class="layout" id="mainLayout" hidden>
+  <div id="taskList"></div>
+  <div id="detail" class="card"><span class="muted">왼쪽에서 작업을 선택하세요.</span></div>
+</div>
+
+<div id="docModalBg" class="modal-bg" hidden>
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;gap:12px;">
+      <strong id="docModalTitle"></strong>
+      <button id="docModalClose" type="button">닫기</button>
+    </div>
+    <div id="docModalNote" class="warn"></div>
+    <pre class="doc" id="docModalBody"></pre>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".json,application/json" hidden>
+<input type="file" id="docFileInput" accept=".md,.markdown,text/markdown,text/plain" hidden>
+
+<script>
+"use strict";
+
+// 이 파일은 순수 클라이언트 사이드 정적 페이지다. 네트워크 요청, 쓰기, 외부 업로드가 전혀 없다.
+const KNOWN_TASK_FIELDS = ["id","status","priority","category","title","summary","where",
+  "parent","deps","doc","done_when","est_min","gate","owner","claimed_at","updated_at","log"];
+const EXTRA_FIELD_LABELS = { done_at: "완료 시각", evidence: "완료 근거" };
+
+const state = { tasks: [], byId: new Map(), meta: {}, enums: null, schemaVersion: null,
+  fileName: null, hash: null, statusFilter: "ALL", searchQuery: "", selectedId: null,
+  parentIds: new Set(), duplicateIds: [], referenceErrors: [], unknownStatusTasks: [] };
+
+function h(tag, opts, ...children) {
+  const e = document.createElement(tag);
+  opts = opts || {};
+  for (const [k, v] of Object.entries(opts)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c === null || c === undefined) continue;
+    e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+function fmt(v, fallback) { return (v === null || v === undefined || v === "") ? (fallback ?? "미지정") : String(v); }
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+async function sha256Hex(text) {
+  try {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch { return null; }
+}
+
+function showFatalError(msg) {
+  const box = document.getElementById("fatalError");
+  box.hidden = false; box.textContent = msg;
+  for (const id of ["summary", "integrity", "controls", "mainLayout"]) document.getElementById(id).hidden = true;
+}
+function clearFatalError() {
+  const box = document.getElementById("fatalError");
+  box.hidden = true; box.textContent = "";
+}
+
+document.getElementById("pickBtn").addEventListener("click", () => document.getElementById("fileInput").click());
+document.getElementById("fileInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  clearFatalError();
+  let text;
+  try { text = await file.text(); }
+  catch (err) { showFatalError("파일을 읽을 수 없습니다: " + err.message); return; }
+  let json;
+  try { json = JSON.parse(text); }
+  catch (err) { showFatalError("JSON 파싱 오류: " + err.message + " — 파일 형식(JSON 문법)을 확인하세요."); return; }
+  state.fileName = file.name;
+  state.hash = await sha256Hex(text);
+  loadData(json);
+});
+
+function loadData(json) {
+  if (typeof json !== "object" || json === null || !Array.isArray(json.tasks)) {
+    showFatalError("이 파일에는 'tasks' 배열이 없습니다. backuplog.json 형식이 맞는지 확인하세요.");
+    return;
+  }
+  state.tasks = json.tasks;
+  state.meta = json.meta || {};
+  state.enums = (json.enums && typeof json.enums === "object") ? json.enums : null;
+  state.schemaVersion = json.$schema_version;
+  state.statusFilter = "ALL";
+  state.searchQuery = "";
+  document.getElementById("searchBox").value = "";
+  buildIndex();
+  renderFileInfo();
+  renderStatusFilterOptions();
+  renderAll();
+}
+
+function buildIndex() {
+  const tasks = state.tasks;
+  const byId = new Map();
+  const idCounts = new Map();
+  for (const t of tasks) {
+    const id = t && t.id;
+    idCounts.set(id, (idCounts.get(id) || 0) + 1);
+    if (id !== undefined && id !== null && !byId.has(id)) byId.set(id, t);
+  }
+  const parentIds = new Set();
+  for (const t of tasks) if (t && t.parent !== null && t.parent !== undefined) parentIds.add(t.parent);
+
+  const validStatus = state.enums && Array.isArray(state.enums.status) ? new Set(state.enums.status) : null;
+  const referenceErrors = [];
+  const unknownStatusTasks = [];
+  for (const t of tasks) {
+    if (!t || t.id === undefined || t.id === null) { referenceErrors.push("id가 없는 작업 항목이 있습니다."); continue; }
+    if (t.parent !== null && t.parent !== undefined && !byId.has(t.parent)) {
+      referenceErrors.push(`${t.id}: parent '${t.parent}' 가 존재하지 않는 작업 id입니다.`);
+    }
+    for (const d of (t.deps || [])) {
+      if (!byId.has(d)) referenceErrors.push(`${t.id}: deps에 존재하지 않는 id '${d}' 가 있습니다.`);
+    }
+    if (validStatus && !validStatus.has(t.status)) unknownStatusTasks.push(String(t.id));
+  }
+  state.byId = byId;
+  state.parentIds = parentIds;
+  state.duplicateIds = [...idCounts.entries()].filter(([, c]) => c > 1).map(([id]) => id);
+  state.referenceErrors = referenceErrors;
+  state.unknownStatusTasks = unknownStatusTasks;
+}
+
+function renderFileInfo() {
+  const box = document.getElementById("fileInfo");
+  clear(box);
+  const meta = state.meta;
+  box.append(
+    h("div", {}, `파일명: ${state.fileName}`),
+    h("div", {}, `스키마 버전: ${fmt(state.schemaVersion, "정보 없음")} · meta.updated: ${fmt(meta.updated, "정보 없음")}`),
+    h("div", { class: "muted" }, `이 파일 내용의 SHA-256: ${state.hash || "(계산 불가)"} — CLI의 file_sha256과 대조해 같은 버전인지 확인할 수 있습니다.`),
+    meta.note ? h("div", { class: "muted" }, `meta.note: ${meta.note}`) : null,
+  );
+}
+
+function renderStatusFilterOptions() {
+  const sel = document.getElementById("statusFilter");
+  clear(sel);
+  sel.appendChild(h("option", { value: "ALL" }, "전체"));
+  const known = state.enums && Array.isArray(state.enums.status) ? state.enums.status : [];
+  const present = new Set(state.tasks.map(t => t && t.status));
+  const all = [...new Set([...known, ...present])].filter(s => s !== undefined);
+  for (const s of all) sel.appendChild(h("option", { value: s }, String(s)));
+  sel.onchange = () => { state.statusFilter = sel.value; renderList(); };
+}
+
+function renderAll() {
+  for (const id of ["summary", "integrity", "controls", "mainLayout"]) document.getElementById(id).hidden = false;
+  renderSummary();
+  renderIntegrity();
+  renderList();
+  renderDetail(null);
+}
+
+function renderSummary() {
+  const box = document.getElementById("summary");
+  clear(box);
+  const total = state.tasks.length;
+  const leaf = state.tasks.filter(t => t && t.id !== undefined && !state.parentIds.has(t.id)).length;
+  const phase = total - leaf;
+  if (total === 0) {
+    box.appendChild(h("div", { class: "warn" }, "표시할 작업이 없습니다 (tasks 배열이 비어 있음)."));
+    return;
+  }
+  const counts = new Map();
+  for (const t of state.tasks) {
+    const s = (t && t.status !== undefined) ? String(t.status) : "(status 없음)";
+    counts.set(s, (counts.get(s) || 0) + 1);
+  }
+  box.append(
+    h("div", {}, h("b", {}, `전체 항목 수(상위 단계 포함): ${total}`), " / ",
+      h("b", {}, `실제 세부 실행 작업 수(하위 작업 없는 리프): ${leaf}`), ` (상위 단계: ${phase})`),
+    h("div", { style: "margin-top:6px" }, ...[...counts.entries()].map(([s, c]) =>
+      h("span", { class: "pill" + (state.unknownStatusTasks.some(id => state.byId.get(id)?.status === s) ? " warn" : "") }, `${s}: ${c}`))),
+  );
+}
+
+function renderIntegrity() {
+  const box = document.getElementById("integrity");
+  clear(box);
+  const issues = [];
+  if (state.duplicateIds.length) issues.push(`중복된 id: ${state.duplicateIds.join(", ")}`);
+  if (state.unknownStatusTasks.length) issues.push(`알 수 없는 상태(enums.status에 없음)를 가진 작업: ${state.unknownStatusTasks.join(", ")}`);
+  issues.push(...state.referenceErrors);
+  if (!state.enums) issues.push("이 파일에는 enums 정의가 없어 상태/우선순위/분류 유효성 검사를 건너뜁니다.");
+  if (issues.length === 0) { box.appendChild(h("div", { class: "ok" }, "무결성 검사 통과: 중복 id, 잘못된 참조, 알 수 없는 상태가 없습니다.")); return; }
+  box.append(h("div", { class: "err" }, h("b", {}, "무결성 오류 / 경고")),
+    h("ul", {}, ...issues.map(m => h("li", { class: "err" }, m))));
+}
+
+function matchesFilter(t) {
+  if (state.statusFilter !== "ALL" && String(t.status) !== state.statusFilter) return false;
+  const q = state.searchQuery.trim().toLowerCase();
+  if (!q) return true;
+  return [t.id, t.title, t.summary].some(v => v !== null && v !== undefined && String(v).toLowerCase().includes(q));
+}
+
+document.getElementById("searchBox").addEventListener("input", (e) => { state.searchQuery = e.target.value; renderList(); });
+
+function renderList() {
+  const box = document.getElementById("taskList");
+  clear(box);
+  const filtered = state.tasks.filter(t => t && matchesFilter(t));
+  if (filtered.length === 0) { box.appendChild(h("div", { class: "muted" }, "조건에 맞는 작업이 없습니다.")); return; }
+  for (const t of filtered) {
+    const row = h("div", { class: "row" + (state.selectedId === t.id ? " selected" : ""),
+      onclick: () => { state.selectedId = t.id; renderList(); renderDetail(t.id); } },
+      h("span", {}, `[${fmt(t.id, "?")}] ${fmt(t.title, "(제목 없음)")}`),
+      h("span", { class: "muted" }, fmt(t.status, "?")));
+    box.appendChild(row);
+  }
+}
+
+function refLink(id) {
+  if (!state.byId.has(id)) return h("span", { class: "pill err" }, `⚠ 존재하지 않는 id: ${id}`);
+  return h("span", { class: "pill", style: "cursor:pointer;color:#2563eb;",
+    onclick: () => { state.selectedId = id; renderList(); renderDetail(id); } }, String(id));
+}
+
+function field(label, valueNode) {
+  return h("div", { class: "field" }, h("div", { class: "label" }, label), h("div", { class: "value" }, valueNode));
+}
+
+let pendingDocTask = null;
+function openDocPicker(task) { pendingDocTask = task; document.getElementById("docFileInput").click(); }
+
+document.getElementById("docFileInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file || !pendingDocTask) return;
+  const expectedBase = String(pendingDocTask.doc || "").split("/").pop();
+  const note = (expectedBase && file.name !== expectedBase)
+    ? `⚠ 선택한 파일명(${file.name})이 doc 경로의 파일명(${expectedBase})과 다릅니다. 올바른 문서를 선택했는지 확인하세요.`
+    : "";
+  let text;
+  try { text = await file.text(); } catch (err) { text = "(문서를 읽을 수 없습니다: " + err.message + ")"; }
+  document.getElementById("docModalTitle").textContent = `${pendingDocTask.id} 문서: ${file.name}`;
+  document.getElementById("docModalNote").textContent = note;
+  document.getElementById("docModalBody").textContent = text;
+  document.getElementById("docModalBg").hidden = false;
+});
+document.getElementById("docModalClose").addEventListener("click", () => { document.getElementById("docModalBg").hidden = true; });
+
+function renderDetail(id) {
+  const box = document.getElementById("detail");
+  clear(box);
+  if (id === null) { box.appendChild(h("span", { class: "muted" }, "왼쪽에서 작업을 선택하세요.")); return; }
+  const t = state.byId.get(id);
+  if (!t) { box.appendChild(h("span", { class: "err" }, "선택한 작업을 찾을 수 없습니다.")); return; }
+
+  box.append(
+    h("h2", { style: "margin-top:0" }, `[${fmt(t.id, "?")}] ${fmt(t.title, "(제목 없음)")}`),
+    h("div", { class: "muted" }, `status: ${fmt(t.status)} · priority: ${fmt(t.priority)} · category: ${fmt(t.category)}`),
+    field("summary", fmt(t.summary, "정보 없음")),
+    field("done_when", fmt(t.done_when, "정보 없음")),
+    field("parent", t.parent === null || t.parent === undefined ? "최상위 작업 (부모 없음)" : refLink(t.parent)),
+    field("deps", (t.deps && t.deps.length) ? h("span", {}, ...t.deps.map(refLink)) : "선행 작업 없음"),
+    field("doc", (t.doc ? h("span", {}, t.doc + "  ", h("button", { type: "button", onclick: () => openDocPicker(t) }, "이 문서 파일 선택해서 열기")) : "연결된 문서 없음")),
+    field("where", fmt(t.where, "미지정")),
+    field("est_min", (t.est_min === null || t.est_min === undefined) ? "미지정" : `${t.est_min}분`),
+    field("gate", h("span", {}, fmt(t.gate, "미지정 (게이트 조건 없음)"), h("div", { class: "hint" }, "※ 표시 전용입니다 — 이 화면은 gate 내용을 명령/코드로 실행하지 않습니다.")) ),
+    field("owner", fmt(t.owner, "미지정")),
+    field("claimed_at", fmt(t.claimed_at, "아직 착수되지 않음")),
+    field("updated_at", fmt(t.updated_at, "정보 없음")),
+  );
+
+  const log = Array.isArray(t.log) ? t.log : [];
+  const logBox = h("div", {});
+  if (log.length === 0) logBox.appendChild(h("span", { class: "muted" }, "기록 없음"));
+  else for (const entry of log) {
+    logBox.appendChild(h("div", { class: "log-entry" },
+      h("div", {}, `at: ${fmt(entry && entry.at, "정보 없음")}`),
+      h("div", {}, `status: ${fmt(entry && entry.status, "정보 없음")}`),
+      h("div", {}, `owner: ${fmt(entry && entry.owner, "미지정")}`),
+      h("div", {}, `note: ${fmt(entry && entry.note, "정보 없음")}`)));
+  }
+  box.appendChild(field("log", logBox));
+
+  const extraKeys = Object.keys(t).filter(k => !KNOWN_TASK_FIELDS.includes(k) && t[k] !== null && t[k] !== undefined && t[k] !== "");
+  if (extraKeys.length) {
+    box.appendChild(h("div", { class: "field" }, h("div", { class: "label" }, "기타 필드 (스키마 외 항목 — 값이 있을 때만 표시)"),
+      ...extraKeys.map(k => h("div", { class: "value" }, `${EXTRA_FIELD_LABELS[k] || k}: ${typeof t[k] === "object" ? JSON.stringify(t[k]) : String(t[k])}`))));
+  }
+}
+</script>
+</body>
+</html>

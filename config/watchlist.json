@@ -1,0 +1,4 @@
+{
+  "holdings": ["GOOGL", "MSFT", "PEP", "COST"],
+  "watch": ["TSLA", "AMD", "AMZN", "ORCL", "MCD"]
+}

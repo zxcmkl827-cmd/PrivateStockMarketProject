@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.ruff_cache/
+.backlog-backups/
+data/prices/
+data/news/
+data/benchmark/
+.claude/scheduled_tasks.lock
+.claude/hooks/.stop_quality_gate_state.json
