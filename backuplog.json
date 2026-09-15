@@ -730,7 +730,7 @@
       "gate": null,
       "owner": "user",
       "claimed_at": null,
-      "updated_at": "2026-09-15T06:44:41Z",
+      "updated_at": "2026-09-15T07:12:02Z",
       "log": [
         {
           "at": "2026-09-15T04:20:16Z",
@@ -749,6 +749,12 @@
           "owner": "user",
           "status": "in_progress",
           "note": "app/main.py에 전체 파이프라인(수집→신호→등급→알림) 구현, data/logs/scan_log.jsonl에 일별 실행 기록(등급/알림건수/실패종목) 적재. 수동 실행 1회차(2026-09-15) 완료: 카카오톡 알림 7건 실제 발송·수신 확인(사용자 확인). run_scan.bat + Windows 작업 스케줄러 'StockTrendAlert_DailyScan' 등록(매일 07:00 KST, 다음 실행 2026-09-16 07:00 확인). done_when 충족을 위해 최소 2일 연속 무개입 실행 로그, 그 중 1일은 알림 0건인 경우가 필요 — 아직 미충족이라 in_progress로 유지. 2일 후 data/logs/scan_log.jsonl 확인해서 완료 처리 필요."
+        },
+        {
+          "at": "2026-09-15T07:12:02Z",
+          "owner": "user",
+          "status": "in_progress",
+          "note": "실행 플랫폼을 Windows 작업 스케줄러에서 GitHub Actions(.github/workflows/daily_scan.yml, 매일 22:00 UTC=07:00 KST cron + workflow_dispatch)로 전환 — PC 전원 상태와 무관하게 실행되도록 사용자 요청(2026-09-15). 이유: 기존 Windows 스케줄러는 StartWhenAvailable=False/WakeToRun=False라 PC가 꺼져있으면 그날 스캔이 누락되고 자동 보충도 안 됨을 확인. 저장소(https://github.com/zxcmkl827-cmd/PrivateStockMarketProject, Public, 사용자 선택) 생성·푸시, Secrets(KAKAO_REST_API_KEY/CLIENT_SECRET/REFRESH_TOKEN) 등록 완료. 카카오 액세스 토큰이 약 6시간만 유효해 실행마다 리프레시하도록 app/notifier.py 수정(중요 버그 수정, 로컬/Actions 공통 적용). 기존 Windows 예약 작업은 중복 알림 방지를 위해 삭제. 수동 workflow_dispatch 1회 실행 성공(success) 확인, data/logs/scan_log.jsonl에 커밋백 정상 동작 확인, 카카오톡 실제 수신 확인. 다만 done_when(2일 연속 무개입 + 1일은 알림 0건)은 아직 미충족 — 같은 날 실행 2건뿐이라 cron으로 최소 이틀 이상 더 쌓여야 함."
         }
       ]
     },
@@ -879,6 +885,34 @@
           "owner": "user",
           "status": "done",
           "note": "config/watchlist.json(보유: GOOGL,MSFT,PEP,COST / 관심: TSLA,AMD,AMZN,ORCL,MCD, 총 9개, 사용자 승인 - 스페이스X는 비상장이라 제외)과 app/watchlist.py 로더 작성. 코드 수정 없이 config에 10번째 티커(NVDA) 추가 후 재실행 시 stderr 경고 발생 확인, 제거 후 정상 9개로 복원 확인. quality_check.py --scope full 통과. done_when 충족."
+        }
+      ]
+    },
+    {
+      "id": "P4.3",
+      "status": "in_progress",
+      "priority": "P2",
+      "category": "feature",
+      "title": "판단 정확도 피드백 리포트 (알림 사후 검증)",
+      "summary": "알림(유지관찰/비중축소/매도) 발생 시점 종가 대비 1주(5거래일)·2주(10거래일) 후 종가를 비교해 적중/과잉감지를 판정하고 리포트로 남긴다. 요구사항 5.8, 사용자 확정(2026-09-15): 세 등급 모두 판정, 적중 기준 -2% 이상 추가 하락, 리포트 전용(임계값 자동 조정 없음).",
+      "where": null,
+      "parent": "P4",
+      "deps": [
+        "P4.1"
+      ],
+      "doc": "docs/backlog/P4.3.md",
+      "done_when": "누적된 scan_log.jsonl의 알림 중 발생 후 1주/2주가 모두 지난 건에 대해 적중/과잉감지 판정이 산출되고, 그 결과가 리포트(로그)로 확인됨",
+      "est_min": 40,
+      "gate": null,
+      "owner": "user",
+      "claimed_at": null,
+      "updated_at": "2026-09-15T07:26:31Z",
+      "log": [
+        {
+          "at": "2026-09-15T07:26:31Z",
+          "owner": "user",
+          "status": "in_progress",
+          "note": "app/feedback.py 구현: scan_log.jsonl의 알림별로 yfinance 실호출로 1주(5거래일)/2주(10거래일) 후 종가를 가져와 (N일후종가-기준종가)/기준종가<=-2% 이면 적중, 아니면 과잉감지로 판정, data/logs/feedback_report.jsonl에 저장. GitHub Actions 워크플로에도 python -m app.feedback 단계 추가해 매일 자동 갱신·커밋되도록 함. 현재 알림 14건 전부 발생 직후라 '대기중'(1주 미경과) — 정상 동작. quality_check.py --scope full 통과. done_when(적중/과잉감지 판정 산출)은 실제 1~2주가 지나야 충족 가능해 in_progress로 유지."
         }
       ]
     }
