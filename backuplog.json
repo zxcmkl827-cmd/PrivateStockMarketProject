@@ -894,25 +894,31 @@
       "priority": "P2",
       "category": "feature",
       "title": "판단 정확도 피드백 리포트 (알림 사후 검증)",
-      "summary": "알림(유지관찰/비중축소/매도) 발생 시점 종가 대비 1주(5거래일)·2주(10거래일) 후 종가를 비교해 적중/과잉감지를 판정하고 리포트로 남긴다. 요구사항 5.8, 사용자 확정(2026-09-15): 세 등급 모두 판정, 적중 기준 -2% 이상 추가 하락, 리포트 전용(임계값 자동 조정 없음).",
+      "summary": "알림(유지관찰/비중축소/매도) 발생 근거(가격 하락률, 매칭 뉴스 제목·카테고리·감성, 시장 상황)를 scan_log.jsonl에 함께 기록하고, 1주(5거래일)·2주(10거래일) 후 종가로 적중/과잉감지를 판정해 근거 유형별로 집계한다. 근거별 가중치(config/signal_weights.json)는 시스템이 자동 조정(사용자 확정 2026-09-15, 최소표본10/조정폭10%/범위0.2~3.0/변경이력로그 안전장치). '매도'의 가격+강한뉴스 동시확인 구조 규칙은 가중치로 무력화되지 않는 고정 안전장치로 유지.",
       "where": null,
       "parent": "P4",
       "deps": [
         "P4.1"
       ],
       "doc": "docs/backlog/P4.3.md",
-      "done_when": "누적된 scan_log.jsonl의 알림 중 발생 후 1주/2주가 모두 지난 건에 대해 적중/과잉감지 판정이 산출되고, 그 결과가 리포트(로그)로 확인됨",
+      "done_when": "누적된 scan_log.jsonl의 알림 중 발생 후 1주/2주가 모두 지난 건에 대해 근거와 함께 적중/과잉감지 판정이 산출되고 feedback_report.jsonl로 확인되며, 최소 1개 근거 유형이 최소표본(10건) 충족으로 실제 가중치 자동조정이 1회 이상 발생해 weight_adjustments.jsonl에 기록됨",
       "est_min": 40,
       "gate": null,
       "owner": "user",
       "claimed_at": null,
-      "updated_at": "2026-09-15T07:26:31Z",
+      "updated_at": "2026-09-15T07:48:40Z",
       "log": [
         {
           "at": "2026-09-15T07:26:31Z",
           "owner": "user",
           "status": "in_progress",
           "note": "app/feedback.py 구현: scan_log.jsonl의 알림별로 yfinance 실호출로 1주(5거래일)/2주(10거래일) 후 종가를 가져와 (N일후종가-기준종가)/기준종가<=-2% 이면 적중, 아니면 과잉감지로 판정, data/logs/feedback_report.jsonl에 저장. GitHub Actions 워크플로에도 python -m app.feedback 단계 추가해 매일 자동 갱신·커밋되도록 함. 현재 알림 14건 전부 발생 직후라 '대기중'(1주 미경과) — 정상 동작. quality_check.py --scope full 통과. done_when(적중/과잉감지 판정 산출)은 실제 1~2주가 지나야 충족 가능해 in_progress로 유지."
+        },
+        {
+          "at": "2026-09-15T07:48:40Z",
+          "owner": "user",
+          "status": "in_progress",
+          "note": "[update] 사용자 요청(2026-09-15)으로 scope 확장: (1) scan_log.jsonl에 판단근거 기록 추가 (2) feedback_report.jsonl이 근거 유형별 적중률 집계 (3) 근거 가중치 자동조정 추가(안전장치 포함, 매도 게이트는 고정). 구현 완료(app/grading.py evaluate_signal, app/main.py reasons 기록, app/feedback.py adjust_weights), 회귀테스트 7건 통과, 합성데이터로 자동조정 로직 검증(최소표본 미달 시 미조정 확인). 실제 자동조정 발동은 표본 축적 후 가능."
         }
       ]
     }

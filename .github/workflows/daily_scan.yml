@@ -31,10 +31,10 @@ jobs:
 
       - run: python -m app.feedback
 
-      - name: Commit scan log and feedback report
+      - name: Commit scan log, feedback report, and weights
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/logs/scan_log.jsonl data/logs/feedback_report.jsonl
+          git add data/logs/ config/signal_weights.json
           git diff --staged --quiet || git commit -m "chore: daily scan log $(date -u +%F)"
           git push

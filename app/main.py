@@ -9,7 +9,7 @@ import pandas as pd
 from app.benchmark_data import BENCHMARK_TICKER, SECTOR_MAP
 from app.benchmark_data import DATA_DIR as BENCH_DIR
 from app.benchmark_data import collect_and_save as collect_benchmark
-from app.grading import GRADE_NONE, grade_signal
+from app.grading import GRADE_NONE, evaluate_signal
 from app.market_context import classify_market_context
 from app.news_data import collect_and_save as collect_news
 from app.news_signals import classify_ticker_news
@@ -25,7 +25,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 LOG_PATH = Path(__file__).resolve().parent.parent / "data" / "logs" / "scan_log.jsonl"
 
 
-def _grade_ticker(ticker: str, benchmark_close: pd.Series, failed_news: list[str]) -> tuple[str, str]:
+def _grade_ticker(ticker: str, benchmark_close: pd.Series, failed_news: list[str]) -> dict:
     close = pd.read_csv(PRICE_DIR / f"{ticker}.csv", index_col=0)["Close"]
     pct_series = price_decline_pct(close)
     pct = pct_series.iloc[-1] if pd.notna(pct_series.iloc[-1]) else None
@@ -37,14 +37,26 @@ def _grade_ticker(ticker: str, benchmark_close: pd.Series, failed_news: list[str
         market_ctx = classify_market_context(benchmark_close, sector_close).iloc[-1]
 
     news_items = [] if ticker in failed_news else classify_ticker_news(ticker)
-    grade = grade_signal(pct if price_signal_now else None, news_items)
+    evaluation = evaluate_signal(pct if price_signal_now else None, news_items)
+    grade = evaluation["grade"]
+
+    reasons = {
+        "price_pct": evaluation["price_pct"],
+        "market_context": market_ctx,
+        "bases": evaluation["bases"],
+        "score": evaluation["score"],
+        "matched_news": [
+            {"title": n["title"], "category": n["category"], "sentiment": n["sentiment"]}
+            for n in evaluation["matched_news"]
+        ],
+    }
 
     if grade != GRADE_NONE:
-        neg_titles = [n["title"] for n in news_items if n["sentiment"] == "negative"]
-        message = format_alert_message(ticker, grade, pct if price_signal_now else None, market_ctx, neg_titles)
+        neg_titles = [n["title"] for n in evaluation["matched_news"]]
+        message = format_alert_message(ticker, grade, evaluation["price_pct"], market_ctx, neg_titles)
         send_notification(message)
 
-    return grade, ("sent" if grade != GRADE_NONE else "no_signal")
+    return {"grade": grade, "reasons": reasons, "sent": grade != GRADE_NONE}
 
 
 def run_scan() -> dict:
@@ -58,19 +70,22 @@ def run_scan() -> dict:
     benchmark_close = pd.read_csv(BENCH_DIR / f"{BENCHMARK_TICKER.lstrip('^')}.csv", index_col=0)["Close"]
 
     grades: dict[str, str] = {}
+    reasons: dict[str, dict] = {}
     sent_count = 0
     for ticker in tickers:
         if ticker in failed_price:
             grades[ticker] = "데이터없음"
             continue
-        grade, status = _grade_ticker(ticker, benchmark_close, failed_news)
-        grades[ticker] = grade
-        if status == "sent":
+        result = _grade_ticker(ticker, benchmark_close, failed_news)
+        grades[ticker] = result["grade"]
+        reasons[ticker] = result["reasons"]
+        if result["sent"]:
             sent_count += 1
 
     record = {
         "date": datetime.now().astimezone().date().isoformat(),
         "grades": grades,
+        "reasons": reasons,
         "notifications_sent": sent_count,
         "failed_tickers": {"price": failed_price, "news": failed_news, "benchmark": failed_benchmark},
     }
