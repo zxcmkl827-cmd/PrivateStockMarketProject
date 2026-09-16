@@ -103,18 +103,24 @@ def _format_prev_ohlc(prev_open: float | None, prev_close: float | None, price_a
 
 
 _OUTCOME_LABELS = {"데이터없음": "판정불가"}
+_WINDOW_LABELS = {"1day": "1일", "1week": "1주", "2week": "2주"}
 
 
 def _format_judgment_history(history: dict | None) -> str:
     """해당 종목의 과거 알림 중 판정이 끝난(적중/과잉감지) 건을 최신순으로 서술하고, 아직
-    1주/2주가 안 지나 대기중인 건수는 별도로 붙인다(app/feedback.load_ticker_history 참고)."""
+    판정 대기중(가격 근거는 1거래일, 뉴스 근거는 1주/2주)인 건수는 별도로 붙인다
+    (app/feedback.load_ticker_history 참고)."""
     history = history or {"shown": [], "pending_count": 0}
     shown = history.get("shown", [])
     pending = history.get("pending_count", 0)
     if not shown and not pending:
         return "과거 판단 이력 없음(첫 알림)"
     if shown:
-        text = "; ".join(f"{h['date']} {h['grade']}→{_OUTCOME_LABELS.get(h['outcome'], h['outcome'])}" for h in shown)
+        text = "; ".join(
+            f"{h['date']} {h['grade']}→{_OUTCOME_LABELS.get(h['outcome'], h['outcome'])}"
+            + (f"({_WINDOW_LABELS[h['window']]})" if h.get("window") else "")
+            for h in shown
+        )
     else:
         text = "판정 완료된 과거 이력 없음"
     if pending:
@@ -160,7 +166,7 @@ def format_alert_message(
         f"- 시장 상황: {context_desc}\n"
         f"- 관련 뉴스: {news_desc}\n"
         f"- 판단 코멘트: {comment}\n"
-        f"- 과거 판단 이력: {_format_judgment_history(judgment_history or [])}\n"
+        f"- 과거 판단 이력: {_format_judgment_history(judgment_history or {})}\n"
         f"- 행동 제안: {ACTION_MAP[grade]}"
     )
 

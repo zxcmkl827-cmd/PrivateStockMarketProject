@@ -85,6 +85,10 @@ def _grade_ticker(
             {"title": n["title"], "category": n["category"], "sentiment": n["sentiment"]}
             for n in evaluation["matched_news"]
         ],
+        # 스캔이 주말/휴장일에도 매일 실행되므로(daily_scan.yml cron에 요일 제한 없음) "오늘" 날짜와
+        # 실제 가격 기준일이 다를 수 있다. app/feedback.py의 사후검증(특히 1거래일 단기 트랙)이 이
+        # 실제 거래일을 기준으로 종가를 조회하도록 함께 기록한다(critical-reviewer 지적, 2026-09-16).
+        "price_as_of": price_as_of,
     }
 
     message = None

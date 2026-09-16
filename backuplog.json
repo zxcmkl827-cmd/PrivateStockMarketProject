@@ -894,19 +894,19 @@
       "priority": "P2",
       "category": "feature",
       "title": "판단 정확도 피드백 리포트 (알림 사후 검증)",
-      "summary": "알림(유지관찰/비중축소/매도) 발생 근거(가격 하락률, 매칭 뉴스 제목·카테고리·감성, 시장 상황)를 scan_log.jsonl에 함께 기록하고, 1주(5거래일)·2주(10거래일) 후 종가로 적중/과잉감지를 판정해 근거 유형별로 집계한다. 근거별 가중치(config/signal_weights.json)는 시스템이 자동 조정(사용자 확정 2026-09-15, 최소표본10/조정폭10%/범위0.2~3.0/변경이력로그 안전장치). '매도'의 가격+강한뉴스 동시확인 구조 규칙은 가중치로 무력화되지 않는 고정 안전장치로 유지.",
+      "summary": "알림(유지관찰/비중축소/매도) 발생 근거(가격 하락률, 매칭 뉴스 제목·카테고리·감성, 시장 상황)를 scan_log.jsonl에 함께 기록하고 사후 검증(적중/과잉감지)해 근거 유형별로 집계한다. 1거래일·1주(5거래일)·2주(10거래일) 후 종가를 모두 계산해 feedback_report.jsonl과 알림 이력에 남기지만(2026-09-16 사용자 확정), 근거별 가중치 자동조정에는 1주/2주 판정만 쓰고 1거래일 판정은 쓰지 않는다 — critical-reviewer 검토로 '10거래일 누적 하락 지표를 1거래일 -2% 기준으로 채점하면 가중치가 하한(0.2)에 수렴해 가격 기반 비중축소 경로가 무력화될 위험'이 확인되어 자동조정에서는 제외(2026-09-16). 최소표본10/조정폭10%/범위0.2~3.0 안전장치에 더해 '직전 조정 이후 새 표본이 최소표본만큼 쌓여야 재조정'하는 쿨다운을 추가(critical-reviewer 지적, 매일 재조정으로 조정폭 제한이 무력화되는 문제 방지). 판정 기준일은 알림 발생 달력 날짜가 아니라 실제 가격 마지막 거래일(price_as_of)을 사용(주말 스캔 실행 시 기준일 어긋남 방지). '매도'의 가격+강한뉴스 동시확인 구조 규칙은 가중치로 무력화되지 않는 고정 안전장치로 유지.",
       "where": null,
       "parent": "P4",
       "deps": [
         "P4.1"
       ],
       "doc": "docs/backlog/P4.3.md",
-      "done_when": "누적된 scan_log.jsonl의 알림 중 발생 후 1주/2주가 모두 지난 건에 대해 근거와 함께 적중/과잉감지 판정이 산출되고 feedback_report.jsonl로 확인되며, 최소 1개 근거 유형이 최소표본(10건) 충족으로 실제 가중치 자동조정이 1회 이상 발생해 weight_adjustments.jsonl에 기록됨",
+      "done_when": "1) 1거래일/1주/2주 판정이 각각 산출되어 feedback_report.jsonl(1day/1week/2week 필드)로 확인되고, 1거래일 판정은 가중치 자동조정 집계(_aggregate_basis_stats)에 반영되지 않음이 코드로 확인됨 2) 최소 1개 근거 유형이 최소표본(10건) 충족 + 재조정 쿨다운 조건을 만족해 실제 가중치 자동조정이 1회 이상 발생해 weight_adjustments.jsonl에 날짜와 함께 기록됨",
       "est_min": 40,
       "gate": null,
       "owner": "assistant",
       "claimed_at": null,
-      "updated_at": "2026-09-16T02:49:27Z",
+      "updated_at": "2026-09-16T06:03:58Z",
       "log": [
         {
           "at": "2026-09-15T07:26:31Z",
@@ -925,6 +925,18 @@
           "owner": "assistant",
           "status": "in_progress",
           "note": "코드 리뷰로 구현 상태 재확인(2026-09-16): app/grading.py evaluate_signal(구조적 매도 게이트 고정)과 app/feedback.py(1주/2주 판정, 근거별 적중률 집계, 최소표본10/조정폭10%/범위0.2~3.0 안전장치 포함 자동조정, weight_adjustments.jsonl 로그)가 done_when이 요구하는 로직을 모두 갖추고 있음을 코드로 확인. 남은 미충족 사유는 순수 시간 경과뿐: scan_log.jsonl에 2026-09-15/09-16 이틀치만 있어 1주(5거래일)/2주(10거래일) 판정과 근거유형별 최소표본(10건) 축적이 아직 불가능. 부가로 CLAUDE.md 기술스택 절이 실제 배포 방식(2026-09-15 GitHub Actions로 전환됨, .github/workflows/daily_scan.yml)과 어긋나 있던 문서 드리프트를 발견해 CLAUDE.md를 실제 코드에 맞게 정정함(P4.3 자체 변경 아님, 참고용 기록)."
+        },
+        {
+          "at": "2026-09-16T05:47:15Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "사용자 요청(2026-09-16)으로 scope 확장: 근거 유형을 판정주기가 다른 두 트랙(가격=1거래일 단기, 뉴스=1주/2주 중장기)으로 분리. app/feedback.py 구현 완료 — EVAL_WINDOWS에 1day 추가, SHORT_TERM_BASES(price_decline/price_decline_strong) 정의, _resolved_outcome_for_basis로 근거별 트랙 라우팅, _aggregate_basis_stats가 근거마다 자신의 트랙 판정을 사용하도록 수정. 안전장치(최소표본10/조정폭10%/범위0.2~3.0)는 두 트랙에 동일 적용, '매도' 구조적 게이트는 변경 없음. 요구사항 문서 5.8절·CLAUDE.md 갱신 완료. 합성데이터 5건 검증(트랙별 라우팅, 매도게이트 제외, 최소표본 문턱) 통과, quality_check.py --scope full 통과. Supabase 미러(P4.4, todo) feedback_report 테이블에 day1_result 컬럼 선반영. done_when 중 '단기 트랙 실제 자동조정 1회 이상'은 price_decline 표본이 실제 10건 쌓여야 충족 가능해 in_progress 유지."
+        },
+        {
+          "at": "2026-09-16T06:03:58Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "critical-reviewer 검토 결과 반영(2026-09-16): [Critical] adjust_weights에 재조정 쿨다운 추가(직전 조정 시점 sample_size + MIN_SAMPLES 미만이면 스킵) — 매일 재실행이 같은 표본 풀을 재평가해 조정폭 제한이 복리 적용되던 문제 수정. [Critical] 1거래일 -2% 판정을 price_decline류 가중치 자동조정에서 완전히 제외(리포트 전용) — 10거래일 누적 하락 지표를 1일 기준으로 채점하면 가중치가 하한(0.2)에 수렴할 위험을 사용자 확인 후 결정(옵션1 채택). [High] 판정 기준일을 달력 날짜 대신 실제 가격 마지막 거래일(price_as_of, app/main.py reasons에 추가)로 사용 — 주말 스캔 실행 시 기준일 어긋남 및 금/토/일 중복 표본 문제 함께 해결. [High] 매도 등급 집계 제외 사유를 요구사항 5.8에 명문화. [Medium] weight_adjustments.jsonl에 date 필드 추가, 알림 이력에 판정창(1일/1주/2주) 라벨 추가(notify_format.py). [Medium] tests/test_feedback.py 신설(9건, 쿨다운/집계제외/1일판정 미반영 검증) — 이전엔 저장소에 테스트 파일이 전무했음(quality_check.py는 lint/길이/컴파일만 검사, 테스트 실행은 게이트에 없음, 후속 논의 필요시 별도 확인). 요구사항 문서 5.8·5.6, CLAUDE.md 개발/검증 방침 절 갱신 완료. quality_check.py --scope full + 회귀테스트 9건 통과."
         }
       ]
     },
