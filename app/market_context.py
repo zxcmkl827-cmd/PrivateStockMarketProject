@@ -21,3 +21,15 @@ def classify_market_context(
 
     is_market_wide = (bench_chg <= threshold_pct) | (sector_chg <= threshold_pct)
     return is_market_wide.map({True: "market_wide", False: "stock_specific"})
+
+
+def refine_with_common_news(price_context: str, common_news_negative: bool) -> str:
+    """가격 데이터로는 'stock_specific'이지만 공통(시장 전체) 뉴스가 부정적이면 라벨을 보정한다.
+
+    등급/점수는 건드리지 않고 알림에 표시되는 맥락 라벨만 보정한다(요구사항 5.4(2), 사용자 확인
+    2026-09-16) — 'market_wide'(가격으로 확인됨)와 'market_wide_news'(뉴스로만 뒷받침됨)를 구분해
+    근거 출처를 투명하게 남긴다.
+    """
+    if price_context == "stock_specific" and common_news_negative:
+        return "market_wide_news"
+    return price_context

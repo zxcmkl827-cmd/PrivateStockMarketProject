@@ -30,12 +30,23 @@
 ## 기술 스택 결정 (P0.1, 2026-09-15 사용자 승인)
 
 - **언어/실행 환경**: Python 스크립트, 로컬(Windows) 실행.
-- **스케줄러**: Windows 작업 스케줄러(Task Scheduler)로 매일 1회 실행 트리거.
+- **스케줄러**: ~~Windows 작업 스케줄러(Task Scheduler)~~ → **GitHub Actions**(`.github/workflows/daily_scan.yml`, 매일 22:00 UTC=07:00 KST cron + `workflow_dispatch` 수동 실행)로 전환(P3.3, 2026-09-15 사용자 요청). 사유: 기존 Windows 작업 스케줄러는 `StartWhenAvailable=False`/`WakeToRun=False`라 PC가 꺼져 있으면 그날 스캔이 누락되고 자동 보충도 안 됨을 실측으로 확인. 저장소(zxcmkl827-cmd/PrivateStockMarketProject, Public)에 GitHub Secrets(카카오·이메일 자격증명)를 등록해 `python -m app.main` → `python -m app.feedback` → `scan_log.jsonl`/`feedback_report.jsonl`/가중치 변경분 커밋·푸시까지 워크플로 안에서 수행. 기존 Windows 예약 작업(`StockTrendAlert_DailyScan`)은 중복 알림 방지를 위해 삭제됨. **이 갱신은 이미 2026-09-15에 사용자가 승인·완료한 변경을 문서에 사후 반영한 것**이며(당시 이 절 갱신이 누락됨), 2026-09-16 세션에서 실제 코드(`.github/workflows/daily_scan.yml`)·백로그 로그와 대조해 바로잡음.
 - **알림 발송**: 카카오톡 "나에게 보내기(Talk Memo)" API를 기본 채널로 사용한다. 카카오 디벨로퍼스 앱 등록과 최초 1회 본인 카카오 계정 OAuth 로그인(액세스·리프레시 토큰 발급)은 보안상 사용자가 직접 수행해야 하며, 이 세션이 대신 로그인할 수 없다. 리프레시 토큰은 약 2개월 후 만료되어 재로그인이 필요할 수 있다. 카카오 발송이 실패(토큰 만료 등)하면 이메일(SMTP)을 백업 채널로 자동 전환한다.
 - **가격/거래량 데이터**: `yfinance`(비공식 Yahoo Finance 라이브러리).
 - **뉴스 데이터**: Google News RSS(종목명/티커 기반 검색 피드).
 - 승인 근거: 2026-09-15 사용자가 대화에서 위 조합을 직접 확정함 (P0.1 `done_when` 충족 근거).
 - **데이터 소스 실호출 검증(P0.3, 2026-09-15)**: `yfinance.download("AAPL", period="5d")`로 실제 가격/거래량 5행 수신 확인. `feedparser.parse("https://news.google.com/rss/search?q=...")`로 실제 뉴스 항목 100건 수신 확인. 두 소스 모두 API 키 없이 무료로 접근 가능함을 확인함 (P0.3 `done_when` 충족 근거).
+- **데이터 미러링 계층 추가(P4.4, 2026-09-16 사용자 승인)**: 사후 검증·가중치 조정 이력을 조회/집계하기 쉽게 만들기 위해 Supabase(Postgres, MCP 경유)를 **보조 데이터 미러**로 추가한다. 아래 조건 안에서만 유효하며, 벗어나는 변경은 다시 사용자 확인이 필요하다.
+  - **원본 vs 미러**: 로컬 JSONL(`data/logs/scan_log.jsonl`, `data/logs/feedback_report.jsonl`, `data/logs/weight_adjustments.jsonl`)이 1차 진실 공급원 지위를 유지한다(2026-09-16 정정 — 실제 코드(`app/feedback.py`의 `WEIGHT_ADJUST_LOG_PATH`)와 GitHub Actions 워크플로가 커밋하는 경로 모두 `config/`가 아니라 `data/logs/`임을 critical-reviewer 검토로 확인). Supabase는 이 로컬 기록을 읽기 편하게 미러링한 조회/집계용 사본일 뿐, 로컬 파일을 대체하지 않는다. Supabase 업로드가 실패해도 로컬 기록·알림 발송·가중치 조정 로직은 전혀 영향받지 않아야 한다.
+  - **미러링 대상**: 스캔 로그(`scan_log.jsonl`), 사후 검증 피드백 리포트(`feedback_report.jsonl`), 가중치 조정 이력(`weight_adjustments.jsonl`) 3종.
+  - **트리거 시점**: 매일 자동 스캔 스크립트(`app/main.py` 실행 흐름) 안에서, 로컬 파일 기록이 끝난 뒤 자동으로 업로드한다. 별도 배치/수동 스크립트를 두지 않는다.
+  - **범위 제한**: 이 미러링은 조회·집계 편의를 위한 인프라 확장이며, §"반드시 지켜야 할 핵심 제약"의 무료 데이터 소스 제약이나 등급 판정 로직에는 영향을 주지 않는다. `backuplog.json`(작업 관리)은 이 미러링 대상에서 제외한다 — CLI(`scripts/backlog_cli.py`)로만 변경되는 현재 체계를 그대로 유지한다.
+  - 후속 구현은 `P4.4` 백로그 항목으로 추적한다.
+- **사후 열람용 웹 리뷰 페이지 추가(P4.5, 2026-09-16 사용자 승인)**: 스캔 로그·사후검증 결과·가중치 조정 이력을 표/차트로 열람하기 쉽게 만들기 위해 Vercel에 정적/SSR 리뷰 페이지를 배포한다. 아래 조건 안에서만 유효하며, 벗어나는 변경은 다시 사용자 확인이 필요하다.
+  - **데이터 소스**: 로컬 JSONL을 직접 읽지 않고, `P4.4` Supabase 미러(조회 전용 publishable/anon 키)만 조회한다. `P4.4`가 완료(`done`)되기 전에는 착수하지 않는다.
+  - **성격**: 알림·등급 판정·가중치 조정 로직과 완전히 분리된 읽기 전용 열람 도구다. 실시간 갱신, 푸시/배지 알림, 자동 새로고침 등 "상시 대시보드"에 해당하는 기능은 넣지 않는다 — §"반드시 지켜야 할 핵심 제약"의 "스캔은 매일 1회, 알림은 이상 감지 시에만" 원칙을 유지하기 위함이다. 사용자가 필요할 때만 직접 열어보는 용도로 한정한다.
+  - **공개 범위**: 저장소(zxcmkl827-cmd/PrivateStockMarketProject)가 이미 Public이고 `scan_log.jsonl`/`feedback_report.jsonl`이 커밋되어 공개되어 있으므로, 동일 데이터를 웹으로 보여주는 것은 기존 대비 새로운 공개 범위 확대가 아니다. 다만 쓰기 권한이 있는 키를 페이지에 노출하지 않는다(조회 전용 키만 사용).
+  - 후속 구현은 `P4.5` 백로그 항목으로 추적하며 `deps: ["P4.4"]`이다.
 
 ## 개발/검증 방침
 

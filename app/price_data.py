@@ -1,4 +1,4 @@
-"""보유/관심종목의 일별 종가·거래량 수집."""
+"""보유/관심종목의 일별 시가·종가·거래량 수집."""
 import sys
 from pathlib import Path
 
@@ -19,7 +19,7 @@ def fetch_price_history(tickers: list[str]) -> tuple[dict[str, pd.DataFrame], li
 
     for ticker in tickers:
         try:
-            df = yf.Ticker(ticker).history(period=FETCH_PERIOD)[["Close", "Volume"]].dropna()
+            df = yf.Ticker(ticker).history(period=FETCH_PERIOD)[["Open", "Close", "Volume"]].dropna()
         except Exception:  # noqa: BLE001 - 개별 티커 실패가 전체 수집을 막아선 안 됨
             failed.append(ticker)
             continue

@@ -26,9 +26,15 @@ HIT_RATE_HIGH, HIT_RATE_LOW = 0.6, 0.4
 
 
 def _load_alerts() -> list[dict]:
-    alerts = []
+    """scan_log.jsonl에서 판정 대상 알림을 모은다.
+
+    하루에 스캔을 여러 번 재실행하면 같은 (date, ticker) 레코드가 중복 기록될 수 있는데,
+    중복 제거 없이 집계하면 최소 표본(MIN_SAMPLES) 안전장치가 재실행 횟수만으로 무력화된다.
+    그래서 (date, ticker)당 마지막 레코드만 남긴다.
+    """
+    by_key: dict[tuple[str, str], dict] = {}
     if not SCAN_LOG_PATH.exists():
-        return alerts
+        return []
     with open(SCAN_LOG_PATH, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -38,9 +44,15 @@ def _load_alerts() -> list[dict]:
             reasons = record.get("reasons", {})
             for ticker, grade in record["grades"].items():
                 if grade in JUDGED_GRADES:
-                    bases = reasons.get(ticker, {}).get("bases", [])
-                    alerts.append({"date": record["date"], "ticker": ticker, "grade": grade, "bases": bases})
-    return alerts
+                    ticker_reasons = reasons.get(ticker, {})
+                    by_key[(record["date"], ticker)] = {
+                        "date": record["date"],
+                        "ticker": ticker,
+                        "grade": grade,
+                        "bases": ticker_reasons.get("bases", []),
+                        "score": ticker_reasons.get("score"),
+                    }
+    return list(by_key.values())
 
 
 def _evaluate_alert(alert: dict) -> dict:
@@ -76,8 +88,16 @@ def _resolved_outcome(result: dict) -> str | None:
 
 
 def _aggregate_basis_stats(results: list[dict]) -> dict[str, dict]:
+    """근거 유형별 적중률을 집계한다.
+
+    score가 None인 레코드는 '매도'의 가격+강한뉴스 구조적 규칙으로 발동된 것이라 가중치와
+    무관하게 결정됐다. 이런 레코드를 그대로 집계하면 가중치를 전혀 쓰지 않은 판정 결과가
+    news_* 가중치 조정에 섞여 들어가므로 제외한다.
+    """
     stats: dict[str, dict] = {}
     for r in results:
+        if r.get("score") is None:
+            continue
         outcome = _resolved_outcome(r)
         if outcome is None:
             continue
@@ -122,6 +142,42 @@ def adjust_weights(results: list[dict]) -> list[dict]:
             f.write(json.dumps({"changes": changes}, ensure_ascii=False) + "\n")
 
     return changes
+
+
+def load_ticker_history(ticker: str, before_date: str, limit: int = 3) -> dict:
+    """feedback_report.jsonl에서 해당 티커의 과거 알림 판정 이력을 조회한다.
+
+    오늘(before_date) 발생한 알림은 아직 사후 검증 대상이 아니므로 제외한다. 매일 자동 스캔은
+    app/main.py 실행 후 app/feedback.py를 실행하는 순서라(CLAUDE.md 기술스택 절), 이 파일을 읽는
+    시점에는 어제까지의 판정 결과만 반영돼 있다 — 오늘 새로 만든 알림 자체가 섞여 들어올 일은 없지만
+    재실행 등 예외 상황에 대비해 방어적으로 제외한다.
+
+    하락 추세 종목은 매일 연속으로 알림이 뜨는데, 날짜 최신순으로만 limit건을 자르면 발생 직후라
+    아직 1주/2주가 안 지난 "대기중" 레코드만 계속 노출되고 실제 적중/과잉감지 실적은 영원히 안
+    보일 수 있다(critical-reviewer 지적, 2026-09-16). 그래서 판정이 끝난(적중/과잉감지/데이터없음)
+    레코드를 우선 최신순으로 최대 limit건 반환하고, 대기중 건수는 총량만 별도로 알려준다.
+    """
+    if not FEEDBACK_LOG_PATH.exists():
+        return {"shown": [], "pending_count": 0}
+    by_date: dict[str, dict] = {}
+    with open(FEEDBACK_LOG_PATH, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            record = json.loads(line)
+            if record.get("ticker") == ticker and record.get("date") < before_date:
+                # 하루에 스캔을 여러 번 재실행하면 같은 (date, ticker)가 중복 기록될 수 있어
+                # (_load_alerts와 동일한 문제), 날짜당 하나만 남긴다.
+                by_date[record["date"]] = {
+                    "date": record["date"],
+                    "grade": record.get("grade"),
+                    "outcome": _resolved_outcome(record) or record.get("status") or "대기중",
+                }
+    all_records = sorted(by_date.values(), key=lambda r: r["date"], reverse=True)
+    resolved = [r for r in all_records if r["outcome"] != "대기중"]
+    pending = [r for r in all_records if r["outcome"] == "대기중"]
+    return {"shown": resolved[:limit], "pending_count": len(pending)}
 
 
 def build_feedback_report() -> list[dict]:

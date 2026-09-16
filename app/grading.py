@@ -11,7 +11,11 @@ from pathlib import Path
 
 from app.signals import load_thresholds
 
-STRONG_NEWS_CATEGORIES = {"earnings_guidance", "regulatory_legal_political"}
+STRONG_NEWS_CATEGORIES = {"earnings_guidance", "regulatory_legal_political", "analyst_rating"}
+# 목표주가 하향(analyst_rating)은 이미 발생한 가격 하락의 후행 결과인 경우가 많아 다른 강한 뉴스
+# (실적/가이던스, 규제/소송)만큼 독립적이지 않다. 그래서 이 카테고리만으로 매도를 트리거하려면
+# 일반 가격 문턱(watch_pct, -5%)이 아니라 더 강한 문턱(reduce_pct, -8%)을 요구한다(사용자 확인 2026-09-16).
+SELL_REQUIRES_STRONG_PRICE = {"analyst_rating"}
 WEIGHTS_PATH = Path(__file__).resolve().parent.parent / "config" / "signal_weights.json"
 REDUCE_SCORE_THRESHOLD = 2.0
 
@@ -38,7 +42,9 @@ def evaluate_signal(pct_change: float | None, news_items: list[dict], weights: d
 
     negative_news = [n for n in news_items if n.get("sentiment") == "negative"]
     news_categories = sorted({n["category"] for n in negative_news if n.get("category")})
-    strong_category_news = any(c in STRONG_NEWS_CATEGORIES for c in news_categories)
+    strong_categories = {c for c in news_categories if c in STRONG_NEWS_CATEGORIES}
+    easy_strong_news = bool(strong_categories - SELL_REQUIRES_STRONG_PRICE)
+    hard_strong_news = bool(strong_categories & SELL_REQUIRES_STRONG_PRICE)
 
     bases = []
     if strong_price_signal:
@@ -48,7 +54,8 @@ def evaluate_signal(pct_change: float | None, news_items: list[dict], weights: d
     bases.extend(f"news_{c}" for c in news_categories)
 
     # 구조적 안전장치: 가격신호 + 강한뉴스 동시확인 시에만 '매도'. 가중치로 조정 불가.
-    if price_signal and strong_category_news:
+    # analyst_rating만 있는 경우는 더 강한 가격신호(strong_price_signal)를 요구한다.
+    if (price_signal and easy_strong_news) or (strong_price_signal and hard_strong_news):
         grade = GRADE_SELL
         score = None
     else:

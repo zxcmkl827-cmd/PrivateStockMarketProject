@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "meta": {
-    "updated": "2026-09-15",
+    "updated": "2026-09-16",
     "context_doc": "개발 요구 사항 문서.md",
     "max_est_min": 60,
     "note": "중장기 추세 이탈 감지 알림 시스템 작업 목록 SSOT. CLAUDE.md에서 이 파일을 작업 우선순위/순서/상태 참고용으로 명시한다. 전용 CLI 도구는 아직 없음 — Claude Code 세션 또는 사용자가 이 파일을 직접 갱신한다. 상태값은 enums.status, 우선순위는 enums.priority, 분류는 enums.category를 따른다. 요구사항 배경·상세는 context_doc(개발 요구 사항 문서.md) 참고. 하위 작업(parent가 있는 항목)은 상위 id에 종속되며, deps에 명시된 항목이 done이어야 착수 가능하다."
@@ -904,9 +904,9 @@
       "done_when": "누적된 scan_log.jsonl의 알림 중 발생 후 1주/2주가 모두 지난 건에 대해 근거와 함께 적중/과잉감지 판정이 산출되고 feedback_report.jsonl로 확인되며, 최소 1개 근거 유형이 최소표본(10건) 충족으로 실제 가중치 자동조정이 1회 이상 발생해 weight_adjustments.jsonl에 기록됨",
       "est_min": 40,
       "gate": null,
-      "owner": "user",
+      "owner": "assistant",
       "claimed_at": null,
-      "updated_at": "2026-09-15T07:48:40Z",
+      "updated_at": "2026-09-16T02:49:27Z",
       "log": [
         {
           "at": "2026-09-15T07:26:31Z",
@@ -919,8 +919,263 @@
           "owner": "user",
           "status": "in_progress",
           "note": "[update] 사용자 요청(2026-09-15)으로 scope 확장: (1) scan_log.jsonl에 판단근거 기록 추가 (2) feedback_report.jsonl이 근거 유형별 적중률 집계 (3) 근거 가중치 자동조정 추가(안전장치 포함, 매도 게이트는 고정). 구현 완료(app/grading.py evaluate_signal, app/main.py reasons 기록, app/feedback.py adjust_weights), 회귀테스트 7건 통과, 합성데이터로 자동조정 로직 검증(최소표본 미달 시 미조정 확인). 실제 자동조정 발동은 표본 축적 후 가능."
+        },
+        {
+          "at": "2026-09-16T02:49:27Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "코드 리뷰로 구현 상태 재확인(2026-09-16): app/grading.py evaluate_signal(구조적 매도 게이트 고정)과 app/feedback.py(1주/2주 판정, 근거별 적중률 집계, 최소표본10/조정폭10%/범위0.2~3.0 안전장치 포함 자동조정, weight_adjustments.jsonl 로그)가 done_when이 요구하는 로직을 모두 갖추고 있음을 코드로 확인. 남은 미충족 사유는 순수 시간 경과뿐: scan_log.jsonl에 2026-09-15/09-16 이틀치만 있어 1주(5거래일)/2주(10거래일) 판정과 근거유형별 최소표본(10건) 축적이 아직 불가능. 부가로 CLAUDE.md 기술스택 절이 실제 배포 방식(2026-09-15 GitHub Actions로 전환됨, .github/workflows/daily_scan.yml)과 어긋나 있던 문서 드리프트를 발견해 CLAUDE.md를 실제 코드에 맞게 정정함(P4.3 자체 변경 아님, 참고용 기록)."
         }
       ]
+    },
+    {
+      "id": "P3.4",
+      "status": "in_progress",
+      "priority": "P2",
+      "category": "feature",
+      "title": "알림 메시지 통합 발송 (종목별 개별 발송 -> 1회 통합 발송)",
+      "summary": "종목마다 개별 카카오톡 메시지를 보내던 것을, 스캔 1회당 카카오톡=등급별 종목 요약(짧은 미리보기용), 이메일=뉴스·시장상황 포함 상세 리포트로 채널을 분리해 발송하도록 변경. 카카오 기본 텍스트 템플릿의 미리보기 길이 제한(약 200자, 실측 확인됨) 때문에 상세 내용을 카카오 하나로 다 보여줄 수 없어 사용자와 협의해 채널 역할을 분리함.",
+      "where": null,
+      "parent": "P3",
+      "deps": [
+        "P3.2"
+      ],
+      "doc": "docs/backlog/P3.4.md",
+      "done_when": "run_scan에서 알림 대상 종목이 있을 때 (1) format_kakao_summary가 등급 우선순위(매도>비중축소>유지관찰)로 정렬한 종목별 한 줄 요약을 카카오 미리보기 안전 길이 이내로 만들어 send_kakao_memo로 발송하고 (2) format_email_report가 뉴스 제목·시장상황·행동제안을 포함한 상세 내용을 이메일로 발송하며(이메일 설정된 경우) (3) 두 채널 중 일부가 실패해도 scan_log.jsonl에 그날의 grades/reasons와 각 채널 발송 결과가 항상 기록됨을 코드로 확인. 카카오 요약 메시지를 실제 발송해 '자세히 보기' 클릭 없이 전체 내용이 보임을 실측으로 확인.",
+      "est_min": null,
+      "gate": "critical-reviewer가 채널 분리 구현(카카오 요약/이메일 상세)에 대해 재검토하고, 로그 유실 방지·매도 등급 가시성 안전장치가 새 구조에서도 유지되는지 확인. 카카오 요약 메시지 실제 발송으로 미리보기 안에서 전체 내용이 보이는지 실측 검증(이메일은 EMAIL_SENDER/EMAIL_APP_PASSWORD 미설정 상태라 실제 발송 검증은 사용자가 이메일 설정 후 별도로 진행 필요).",
+      "owner": "assistant",
+      "claimed_at": null,
+      "updated_at": "2026-09-15T23:33:18Z",
+      "log": [
+        {
+          "at": "2026-09-15T22:56:26Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": ""
+        },
+        {
+          "at": "2026-09-15T23:08:22Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] critical-reviewer 검토 반영(2026-09-15): 로그 유실 방지(발송 예외를 잡아 scan_log는 항상 기록), 매도 등급 정렬+헤더 요약, 카카오 텍스트 길이 제한 대응 위한 자동 분할(SAFE_MESSAGE_LENGTH=900) 추가. done_when을 '스캔당 최대 1회 발송'에서 '평소 1회, 초과 시만 분할'로 수정. 사용자가 자동분할 방식을 직접 선택함(AskUserQuestion)."
+        },
+        {
+          "at": "2026-09-15T23:11:45Z",
+          "owner": "assistant",
+          "status": "done",
+          "note": "app/notify_format.py: format_combined_alert_message가 (등급,메시지) 튜플을 매도>비중축소>유지관찰 순으로 정렬해 헤더 요약과 함께 list[str]로 반환(SAFE_MESSAGE_LENGTH=900 초과 시에만 자동 분할). app/main.py: run_scan()이 알림 대상 종목의 메시지를 모아 위 함수로 만든 메시지들을 순회 발송하며, 각 발송을 개별 try/except로 감싸 실패해도 scan_log.jsonl 기록(grades/reasons/notification_channel/notification_error)이 항상 남도록 수정. app/notifier.py 예외 처리 범위 확대(KeyError 포함) 및 카카오 실패 시 진단 로그 추가. quality_check.py --scope full 통과. critical-reviewer 검토에서 지적된 3건(로그 유실/길이초과/매도 가시성) 모두 코드로 반영 확인. docs/backlog/P3.4.md를 backlog-explainer로 최신화(file_sha256 056ac981...). done_when 충족. 단, 카카오톡 실제 텍스트 길이 한도는 실측 검증되지 않았음 — gate에 명시된 대로 사용자가 실사용 중 확인 필요(자동분할 방식으로 진행하기로 사용자가 직접 결정, 2026-09-15)."
+        },
+        {
+          "at": "2026-09-15T23:32:59Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "done 처리 후 실제 카카오톡 발송 테스트(사용자 확인)에서 gate에 명시했던 우려가 실제로 발생함: 카카오 '나에게 보내기' 기본 텍스트 템플릿은 약 200자 내외만 미리보기로 노출하고 초과분은 '자세히 보기' 버튼(link.web_url)으로 연결되는데, 현재 코드가 link:{} 로 보내 카카오 앱에 등록된 기본 도메인(localhost:5000, OAuth 개발용 리다이렉트로 추정)으로 연결되어 상세 내용을 확인할 수 없음이 확인됨. 사용자가 '카카오=요약, 이메일=상세 보고서로 채널 분리' 방식을 선택함(2026-09-15). done_when이 실제로 충족되지 않았던 것으로 판단해 재오픈."
+        },
+        {
+          "at": "2026-09-15T23:33:18Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] 카카오 미리보기 길이 제한 실측(link:{} → localhost:5000으로 연결되어 상세 확인 불가)에 따라 사용자가 채널 분리(카카오=요약/이메일=상세) 방식을 선택(2026-09-15). done_when/gate를 새 설계에 맞게 갱신."
+        }
+      ]
+    },
+    {
+      "id": "P2.5",
+      "status": "done",
+      "priority": "P3",
+      "category": "feature",
+      "title": "뉴스 신호 고도화: 애널리스트 다운그레이드 카테고리 + 공통(시장) 뉴스 컨텍스트",
+      "summary": "종목별 뉴스에 애널리스트 다운그레이드/목표주가 하향 카테고리(analyst_rating)를 추가하고, 종목 무관 공통(시장) 뉴스를 별도 수집해 이메일 리포트 참고 맥락 + 시장상황(market_context) 판정 보조 입력으로 쓴다. critical-reviewer 검토에서 (1) 목표주가 하향이 가격하락의 후행 결과라 '매도'의 복수신호 동시확인 전제가 약해지는 문제 (2) 공통뉴스 활용 범위가 사용자 의도보다 축소 해석된 문제를 지적받아, 사용자 재확인 후 analyst_rating 단독 매도 트리거는 -8% 요구, 공통뉴스는 market_context 보조입력으로 확장 반영함. 무료 Google News RSS 범위 내 구현이며 유료 애널리스트 API 도입 아님.",
+      "where": null,
+      "parent": "P2",
+      "deps": [
+        "P2.3",
+        "P3.4"
+      ],
+      "doc": "docs/backlog/P2.5.md",
+      "done_when": "1) app/news_signals.py CATEGORY_PATTERNS에서 analyst_rating이 먼저 매칭되고 목표주가 인하 실제 헤드라인을 정확히 분류하며 오늘자 실제 수집 데이터(약 130여건) 전수 검사에서 오탐 없음을 확인 2) app/grading.py에서 analyst_rating 단독은 -8% 이상에서만, earnings/regulatory는 -5%에서 매도가 발동함을 경계값(-6%/-9%) 단위 테스트로 확인 3) app/market_context.py의 refine_with_common_news가 공통뉴스 부정 비율이 과반수 초과일 때만 stock_specific을 market_wide_news로 보정함을 확인(부정 1건만으로는 보정 안 됨 — 오늘 실측 15건 중 12건 과반 초과 사례로 True/False 경계 모두 검증) 4) app/main.py가 common_news_negative/common_news_titles를 스캔당 1회 계산해 _grade_ticker와 이메일 리포트에 전달하고 scan_log.jsonl에 common_news로 기록함을 실제 run_scan() 실행(발송 함수만 스텁 처리, 중복 실발송 방지)으로 확인 5) app/feedback.py가 (date,ticker) 중복 레코드를 제거해 MIN_SAMPLES 안전장치가 재실행 횟수로 무력화되지 않고, score=None 구조적 매도 레코드를 가중치 집계에서 제외함을 확인 6) app/main.py의 가격 하락 게이트가 하드코딩값 대신 config/signal_thresholds.json을 읽어 grading.py와 임계값이 이중화되지 않음을 확인 7) app/news_data.py가 공통뉴스 수집 실패 시 기존 _market.json을 빈 값으로 덮어쓰지 않고 실패 사실만 failed_tickers.market_news로 기록함을 확인 8) quality_check.py --scope full 통과",
+      "est_min": null,
+      "gate": "critical-reviewer 1차·2차 검토에서 지적된 항목이 모두 코드 수정 및 실측 재검증으로 반영되었음을 확인 완료. 추가 게이트 없음.",
+      "owner": "assistant",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T00:49:32Z",
+      "log": [
+        {
+          "at": "2026-09-16T00:04:55Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": ""
+        },
+        {
+          "at": "2026-09-16T00:35:10Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] critical-reviewer 2차 검토 반영(2026-09-16): 사용자에게 2가지 정책 재확인(analyst_rating 매도 트리거는 -8% 요구 / 공통뉴스는 market_context 보조입력으로 사용) 후 grading.py·market_context.py·news_signals.py·main.py·feedback.py 수정, 요구사항 문서 갱신, 오늘자 캐시 데이터로 재검증(실시간 재발송 없이 검증)."
+        },
+        {
+          "at": "2026-09-16T00:35:22Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] critical-reviewer 지적 반영: P3.4(이메일 포맷 함수)에 의존하는데 우선순위가 P2로 되어 있어 실행 순서 표기가 실제와 어긋났음. P3로 정정."
+        },
+        {
+          "at": "2026-09-16T00:45:51Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] critical-reviewer 2차 재검토(2026-09-16)에서 1차 지적 13건 중 9건 해소 확인 + 신규/잔존 결함 여러 건 발견: (a) scan_log 동일날짜 중복 레코드가 MIN_SAMPLES 안전장치를 무력화 (b) common_news_negative가 any() 1건 기준이라 사실상 상시 True (오늘 실측 15건 중 12건 부정) (c) main.py 가격게이트 하드코딩 -5.0이 config와 이중화 (d) 공통뉴스 수집 실패 시 기존 파일을 빈 값으로 덮어씀 (e) MACRO_NEGATIVE_PATTERN의 rout 오탐/raise rate 미탐. 사용자 재확인(2026-09-16): 공통뉴스 부정 판정은 '과반수 이상'일 때만 인정하기로 확정. (a)(c)(d)(e)는 코드로 직접 수정, (b)는 사용자 확인한 과반수 기준으로 수정. 수정 후 재검증: dedup 전/후 알림수 비교, raise-rate/rout 정규식 재테스트, 과반수 임계값 실측 데이터 재확인, 발송 함수를 스텁 처리한 실제 run_scan() 재실행으로 common_news 필드 기록과 전체 배선을 확인(중복 실발송 없음). quality_check.py --scope full 통과."
+        },
+        {
+          "at": "2026-09-16T00:49:32Z",
+          "owner": "assistant",
+          "status": "done",
+          "note": "1차 구현(analyst_rating 카테고리, 공통뉴스 수집) 후 critical-reviewer 1차 검토에서 (a)매도 복수신호 동시확인 전제 붕괴 위험 (b)공통뉴스 활용범위 사용자 의도 과소해석 등을 지적받아 사용자 재확인(analyst_rating 단독 매도는 -8% 요구/공통뉴스는 market_context 보조입력) 후 반영. 2차 검토에서 추가로 (c)scan_log 중복레코드로 인한 MIN_SAMPLES 안전장치 무력화 (d)common_news_negative가 any() 기준이라 사실상 상시 True (e)가격게이트 -5.0 하드코딩 이중화 (f)공통뉴스 수집실패시 기존파일 덮어쓰기 (g)MACRO_NEGATIVE_PATTERN 오탐/미탐 을 지적받아, 사용자가 (d)의 임계치를 '과반수 이상'으로 확정한 것을 포함해 전부 코드로 수정. app/feedback.py는 (date,ticker) 중복제거 + score=None 구조적매도 제외로 가중치 자동조정 안전장치를 보강. app/main.py는 config 기반 가격임계값 사용, 공통뉴스 과반수 판정, common_news를 scan_log에 기록하도록 수정. 발송함수를 스텁 처리한 실제 run_scan() 재실행으로 전체 배선(공통뉴스->market_context 보정, 이메일 리포트, scan_log 기록)을 중복 실발송 없이 재검증. quality_check.py --scope full 통과. docs/backlog/P2.5.md를 backlog-explainer로 최종 갱신(file_sha256 62cac9b9...). done_when 8개 항목 모두 코드/테스트로 충족 확인."
+        }
+      ]
+    },
+    {
+      "id": "P4.4",
+      "status": "todo",
+      "priority": "P2",
+      "category": "infra",
+      "title": "Supabase 데이터 미러링: 스캔 로그·피드백·가중치 이력 적재",
+      "summary": "사후 검증(5.8) 조회/집계를 쉽게 하기 위해 Supabase(Postgres, MCP 경유)를 보조 데이터 미러로 추가한다. 로컬 JSONL(scan_log.jsonl/feedback_report.jsonl/weight_adjustments.jsonl)이 1차 진실 공급원 지위를 유지하며, Supabase는 그 사본을 조회/집계용으로만 적재한다. 업로드는 매일 스캔 스크립트 안에서 로컬 기록 완료 후 자동 트리거되며, 업로드 실패가 로컬 기록·알림 발송·가중치 조정 로직에 영향을 주면 안 된다. 사용자 결정 4건(2026-09-16): 1)미러링 대상은 스캔 로그까지 포함한 3종 전체 2)로컬이 1차 진실·Supabase는 보조 미러 3)매일 스캔 스크립트 내 자동 업로드 4)본 항목으로 백로그 등록.",
+      "where": null,
+      "parent": "P4",
+      "deps": [
+        "P4.3"
+      ],
+      "doc": "docs/backlog/P4.4.md",
+      "done_when": "1) Supabase 연결 정보(프로젝트 URL/키)가 환경변수로만 관리되고 저장소에 하드코딩되지 않음을 코드로 확인 2) app/main.py 스캔 실행 흐름에서 scan_log.jsonl/feedback_report.jsonl/weight_adjustments.jsonl 각각에 대응하는 Supabase 테이블 3개가 설계되고, 실제 실행으로 각 테이블에 오늘자 레코드가 적재됨을 확인 3) Supabase 업로드 함수를 강제 실패시킨 상태에서 로컬 JSONL 기록·등급 판정·알림 발송이 정상 동작함을 실측으로 확인(업로드는 로컬 흐름과 분리된 best-effort여야 함) 4) mcp__supabase__get_advisors로 보안 권고사항을 확인해 심각한 미해결 항목이 없음을 확인 5) quality_check.py --scope full 통과",
+      "est_min": null,
+      "gate": "critical-reviewer 검토에서 지적된 항목이 코드 수정 및 실측 재검증으로 반영되었음을 확인 완료해야 done 처리 가능.",
+      "owner": "unassigned",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T02:42:07Z",
+      "log": []
+    },
+    {
+      "id": "P3.5",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "이메일 상세 리포트에 종목별 판단 근거 코멘트(200자 이내) 추가",
+      "summary": "사용자 요청(2026-09-16): 이메일 상세 리포트가 공통뉴스 1~2건, 종목별 뉴스 최대 2건만 보여주고 그 뉴스를 긍정/부정 어떻게 판단해 등급을 결정했는지 중간 설명이 빠져 있다는 지적에 따라, app/notify_format.py에 종목별 판단 코멘트(가격신호·뉴스근거 카테고리·시장상황·등급결론을 200자 이내로 서술)를 추가해 이메일(format_alert_message -> format_email_report) 본문에만 포함시켰다. 카카오톡 요약 경로(format_kakao_summary)는 format_alert_message를 호출하지 않는 완전히 별도 함수라 이번 변경으로 전혀 수정되지 않았다(사용자 요청대로 카카오 내용 유지).",
+      "where": null,
+      "parent": "P3",
+      "deps": [
+        "P3.1",
+        "P3.4"
+      ],
+      "doc": "docs/backlog/P3.5.md",
+      "done_when": "1) app/notify_format.py의 _build_reasoning_comment가 evaluate_signal이 실제로 계산하는 근거(price_pct/bases/market_context/score)와 뉴스 수집 성공 여부(news_available)만 사용해 코멘트를 만들고, evaluate_signal() 반환값을 그대로 넘긴 매도/비중축소/유지관찰 3개 등급 샘플 및 뉴스 카테고리 4종이 모두 붙는 최악 케이스에서도 코멘트가 200자를 넘지 않으며, 뉴스 수집 실패 종목(news_available=False)에서는 \"없음\"이 아니라 \"확인 불가\"로 출력됨을 확인 2) app/notify_format.py의 format_kakao_summary가 format_alert_message/_build_reasoning_comment를 호출하지 않고 app/main.py의 alert_summaries가 여전히 (grade, ticker, price_pct) 3튜플만 구성해 format_kakao_summary에 전달됨을 코드로 확인해 카카오톡 발송 내용이 이번 변경과 무관함을 검증 3) quality_check.py --scope full 통과",
+      "est_min": null,
+      "gate": "critical-reviewer 검토를 실행하고, 각 지적의 채택/보류 판단과 근거를 set-status --note에 기록했을 때 done 처리 가능(.claude/rules/backlog-governance.md §7).",
+      "owner": "assistant",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T03:05:54Z",
+      "log": [
+        {
+          "at": "2026-09-16T03:05:10Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] [update] critical-reviewer 검토 반영(2026-09-16): (1) deps에 P3.4 추가 — format_alert_message/_grade_ticker/alert_summaries는 P3.4가 만든 산출물이라 순서 의존성을 명시해야 함(P3.4는 아직 in_progress). (2) done_when 1)에 뉴스 수집 실패 케이스(news_available=False → \"확인 불가\")와 200자 최악 케이스 검증을 명시. (3) done_when 2)를 커밋 기준 git diff(작업트리에 P3.5 외 다수 미커밋 변경이 섞여 재현 불가능한 문제 지적됨) 대신, format_kakao_summary가 format_alert_message를 호출하지 않고 alert_summaries가 3튜플 그대로임을 코드로 확인하는 방식으로 변경. (4) gate 문구를 \"전건 반영\" 대신 governance §7의 채택/보류 기록 방식으로 수정. 코드도 함께 수정: _build_reasoning_comment에 news_available 인자 추가(뉴스 수집 실패를 \"근거 없음\"과 구분), REDUCE 결론에 문턱값(REDUCE_SCORE_THRESHOLD) 표기 및 score=None 방어분기 추가, WATCH 결론에서 자기모순적인 \"낮게\" 표현 제거, MARKET_CONTEXT_DESC[None] 문구에서 원인 단정 제거, format_alert_message의 MARKET_CONTEXT_DESC 조회를 .get()으로 방어, 코멘트의 가격 표기에서 불필요한 +기호 제거. app/main.py _grade_ticker가 news_available=(ticker not in failed_news)을 계산해 format_alert_message에 전달하도록 수정. quality_check.py --scope full 재통과, news_available=False/score=None+REDUCE/미매핑 market_context 등 엣지케이스 6건 실측 재검증 완료(코멘트 전부 200자 이내: 48~117자). Medium 지적 중 price_decline_strong 가중치 드리프트로 인한 자기모순 서술 가능성(운영데이터 누적 후 판단 필요)은 코드 변경 없이 보류로 남김 — 근거 부족([추정] 표시된 항목). P3.5 범위 밖 발견(섹터 벤치마크 CSV 읽기 실패 시 스캔 전체 중단)은 별도 백로그 항목으로 등록 예정."
+        },
+        {
+          "at": "2026-09-16T03:05:54Z",
+          "owner": "assistant",
+          "status": "done",
+          "note": "done_when 3개 항목 모두 충족 확인: 1) app/notify_format.py._build_reasoning_comment(grade, price_pct_change, market_context, bases, score, news_available)를 evaluate_signal() 출력 형태 그대로의 샘플(매도/비중축소/score=None방어/유지관찰/news_available=False/뉴스4종 최악케이스/미매핑 market_context) 6건으로 실행해 전부 200자 이내(48~117자)이고 뉴스수집 실패 케이스는 \"없음\"이 아니라 \"확인 불가\"로 출력됨을 확인. 2) app/notify_format.py의 format_kakao_summary가 format_alert_message/_build_reasoning_comment를 호출하지 않고(grep으로 확인), app/main.py의 alert_summaries가 여전히 (grade, ticker, price_pct) 3튜플만 구성해 format_kakao_summary에 전달됨을 코드로 확인 — 카카오톡 발송 내용은 이번 변경과 무관함. 3) quality_check.py --scope full 재통과(코드 길이/ruff/py_compile 전부 OK). critical-reviewer 지적 10건 중 8건(High 3건 전부 포함) 코드/백로그로 반영, Medium 1건(가중치 드리프트로 인한 서술 자기모순 가능성)은 운영데이터 부족으로 보류, 범위 밖 1건(섹터 벤치마크 CSV 미확인 시 스캔 중단)은 P3.6으로 신규 등록. docs/backlog/P3.5.md는 backlog-explainer가 실제 코드(app/notify_format.py, app/main.py) 직접 확인 후 2차로 정정 완료."
+        }
+      ]
+    },
+    {
+      "id": "P3.6",
+      "status": "in_progress",
+      "priority": "P2",
+      "category": "bug",
+      "title": "섹터 벤치마크 CSV 읽기 실패 시 스캔 전체 중단 방지",
+      "summary": "critical-reviewer가 P3.5 검토 중 발견한 범위 밖 결함(2026-09-16): app/main.py의 _grade_ticker가 SECTOR_MAP[ticker] 섹터 ETF CSV를 failed_benchmark 확인 없이 pd.read_csv로 바로 읽는다. run_scan은 collect_benchmark() 실패 종목을 failed_benchmark로 이미 수집해두지만(main.py), _grade_ticker는 이를 참조하지 않아 섹터 ETF 수집이 실패해 CSV가 없으면 FileNotFoundError로 그날 스캔 전체가 중단되고 scan_log.jsonl도 전혀 기록되지 않는다. 이는 _send_alerts 주석이 표방하는 \"한쪽 실패가 로그 기록을 막지 않는다\" 원칙에 정면으로 어긋난다.",
+      "where": null,
+      "parent": "P3",
+      "deps": [],
+      "doc": "docs/backlog/P3.6.md",
+      "done_when": "1) SECTOR_MAP에 있는 종목의 섹터 ETF 수집이 실패한 상태(failed_benchmark에 해당 섹터 포함)를 의도적으로 재현해도 run_scan()이 예외 없이 완료되고 scan_log.jsonl에 그날 레코드가 기록됨을 실측으로 확인 2) 그 종목의 market_context는 계산 불가로 처리되되(None), 가격 신호에 따른 등급 판정 자체는 계속 진행됨을 확인 3) quality_check.py --scope full 통과",
+      "est_min": null,
+      "gate": "critical-reviewer 검토에서 지적된 항목의 채택/보류 판단과 근거를 set-status --note에 기록해야 done 처리 가능.",
+      "owner": "assistant",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T04:02:55Z",
+      "log": [
+        {
+          "at": "2026-09-16T04:02:55Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "착수. app/main.py의 run_scan()(벤치마크 지수 CSV, :138) / _grade_ticker()(섹터 ETF CSV, :45)가 pd.read_csv를 예외 처리 없이 직접 호출해 파일이 없으면(수집 실패) FileNotFoundError로 스캔 전체가 중단되는 문제를 고친다. 두 지점 모두 동일한 패턴이라 공용 안전 판독 헬퍼로 통일 예정."
+        }
+      ]
+    },
+    {
+      "id": "P3.7",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "이메일 상세 리포트에 전일 시가/종가 및 과거 판단 적중여부 이력 추가",
+      "summary": "사용자 요청(2026-09-16): 이메일 알림에 현재의 매도/매수(등급) 판단·근거 외에, (1)전일 시가/종가와 (2)해당 종목의 과거 알림 판단이 사후 검증(feedback_report.jsonl, 요구사항 5.8)에서 적중/과잉감지로 판정된 이력을 함께 표시한다. app/price_data.py가 Open 컬럼을 추가로 수집하고, app/feedback.py의 결과를 app/main.py가 읽어 app/notify_format.py의 이메일 전용 메시지에 포함시키는 구조로 구현 예정.",
+      "where": null,
+      "parent": "P3",
+      "deps": [
+        "P3.5",
+        "P4.3"
+      ],
+      "doc": "docs/backlog/P3.7.md",
+      "done_when": "1) app/price_data.py가 Close/Volume에 더해 Open을 수집·저장하고 기존 price_decline_pct 등 Close 기반 로직에 영향이 없음을 확인 2) 이메일 상세 리포트(format_alert_message) 각 종목 블록에 가장 최근 거래일 시가/종가(날짜 명시, Open 컬럼 부재 시에도 예외 없이 '가격 데이터 없음'으로 처리)와, 해당 티커의 feedback_report.jsonl 과거 판정 이력이 표시되되 판정이 끝난(적중/과잉감지/판정불가) 건을 최신순 최대 3건 우선 노출하고 대기중 건수는 별도 표기함을 확인(연속 알림 종목에서도 판정 완료 이력이 대기중에 가려지지 않음) 3) 카카오 요약(format_kakao_summary)이 여전히 (grade, ticker, price_pct) 3튜플만 받고 format_alert_message를 호출하지 않아 이번 변경과 무관함을 코드로 확인 4) 해당 티커의 과거 판정 이력이 전혀 없는 경우(신규 알림 종목)에도 예외 없이 '과거 판단 이력 없음(첫 알림)'으로 정상 동작함을 확인 5) quality_check.py --scope full 통과",
+      "est_min": null,
+      "gate": "critical-reviewer 검토를 실행하고, 각 지적의 채택/보류 판단과 근거를 set-status --note에 기록했을 때 done 처리 가능(.claude/rules/backlog-governance.md §7).",
+      "owner": "assistant",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T04:48:27Z",
+      "log": [
+        {
+          "at": "2026-09-16T04:31:20Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "착수: app/price_data.py Open 컬럼 수집 추가, app/feedback.py에 티커별 과거 판정 이력 조회 헬퍼 추가, app/notify_format.py/app/main.py를 이메일 전용 경로에 반영"
+        },
+        {
+          "at": "2026-09-16T04:43:36Z",
+          "owner": "assistant",
+          "status": "in_progress",
+          "note": "[update] critical-reviewer 1차 검토 반영: done_when을 실제 구현(날짜 명시 최근거래일 표시, 판정완료 우선+대기중 건수 분리, Open 컬럼 부재 방어)에 맞춰 구체화하고 gate 추가"
+        },
+        {
+          "at": "2026-09-16T04:48:27Z",
+          "owner": "assistant",
+          "status": "done",
+          "note": "done_when 5개 항목 모두 충족 확인: 1) app/price_data.py가 Open 추가 수집, price_decline_pct 등 Close 기반 로직 무변경(코드 확인) 2) format_alert_message가 최근 거래일(날짜 명시) 시가/종가와 feedback_report.jsonl 기반 과거 판정 이력(판정완료 최신 3건 우선+대기중 건수 별도)을 이메일에 포함, format_kakao_summary/alert_summaries는 3튜플 그대로라 무변경(코드+합성데이터 실행으로 확인) 3) 과거 이력 없는 신규 티커 및 Open 컬럼 없는 CSV 양쪽 모두 예외 없이 '과거 판단 이력 없음(첫 알림)'/'가격 데이터 없음'으로 정상 동작(합성 테스트 2건 확인) 4) quality_check.py --scope full 통과. critical-reviewer 지적 반영: [채택] (a)연속 알림 종목에서 이력이 항상 '대기중'만 노출되는 구조적 결함 -> load_ticker_history를 판정완료 우선+대기중 건수 분리로 수정 (b)Open 컬럼 부재 시 KeyError로 스캔 전체 중단 위험 -> 방어 분기 추가 (c)cron이 22:00 UTC(미국장 마감 후) 실행돼 '전일'이 부정확할 수 있음 -> 실제 거래일 날짜를 표시에 명시 (d)요구사항 문서 미비 4건(카카오 제외 명시, 1주/2주 우선순위 표시 규칙, 데이터없음->판정불가 라벨, 최근3건 표시) -> 개발요구사항문서.md §5.6에 반영 (e)§5.7 열거 노후화 -> 한 문장 추가 (f)price_data.py docstring 미갱신 -> 수정 (g)CLAUDE.md P4.4의 weight_adjustments.jsonl 경로가 실제 코드(data/logs/)와 다른 config/로 되어있던 문서 드리프트(범위 밖 발견) -> CLAUDE.md 정정. [보류] P4.3이 아직 in_progress라 deps 미완 상태에서 착수한 점 -> P4.3 자체 로그에 남은 범위는 순수 시간경과(scan_log 표본 축적)뿐이고 feedback_report.jsonl 스키마(date/ticker/grade/1week/2week/status)는 이미 확정·구현되어 있어 스키마 변경 위험 없음을 확인, deps는 유지. P1.1 문서의 '시가 포함 여부' 미결 확인 질문이 이번 구현으로 사실상 결정된 점(범위 밖) -> 코드 변경 없이 다음 세션 참고용으로만 기록, P1.1 문서 자체 갱신은 이번 범위에서 제외. docs/backlog/P3.7.md는 backlog-explainer가 실제 코드(app/price_data.py, app/feedback.py, app/notify_format.py, app/main.py) 직접 확인 후 최종 반영 완료."
+        }
+      ]
+    },
+    {
+      "id": "P4.5",
+      "status": "todo",
+      "priority": "P2",
+      "category": "infra",
+      "title": "사후 열람용 웹 리뷰 페이지 (Vercel + Supabase 미러 조회)",
+      "summary": "scan_log/feedback_report/weight_adjustments 이력을 표/차트로 열람하는 정적/SSR 페이지를 Vercel에 배포한다. 로컬 JSONL을 직접 읽지 않고 P4.4 Supabase 미러를 조회 전용(publishable/anon 키)으로만 사용하며, 알림/등급 판정/가중치 조정 로직과 완전히 분리된 읽기 전용 도구다. 실시간 갱신·푸시·배지 등 상시 대시보드 성격 기능은 넣지 않는다. 사용자 결정(2026-09-16): CLAUDE.md 기술 스택 결정 절에 반영 완료.",
+      "where": null,
+      "parent": "P4",
+      "deps": [
+        "P4.4"
+      ],
+      "doc": null,
+      "done_when": "1) P4.4가 done 상태 2) 페이지가 Supabase 조회 전용 키만 사용하고 쓰기 권한 키가 코드/번들에 노출되지 않음을 확인 3) 스캔 로그/피드백 리포트/가중치 조정 이력 3종이 실제 배포된 페이지에서 조회됨을 실측 확인 4) 실시간 자동 갱신·푸시 알림 등 상시 대시보드 기능이 없음을 코드 리뷰로 확인 5) quality_check.py --scope full 통과",
+      "est_min": null,
+      "gate": "critical-reviewer 검토에서 지적된 항목이 코드 수정 및 실측 재검증으로 반영되었음을 확인 완료해야 done 처리 가능.",
+      "owner": "unassigned",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T05:08:25Z",
+      "log": []
     }
   ]
 }

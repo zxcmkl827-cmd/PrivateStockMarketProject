@@ -2,6 +2,7 @@
 import json
 import os
 import smtplib
+import sys
 from email.mime.text import MIMEText
 from pathlib import Path
 
@@ -41,6 +42,8 @@ def send_kakao_memo(message: str, access_token: str) -> bool:
     headers = {"Authorization": f"Bearer {access_token}"}
     template = json.dumps({"object_type": "text", "text": message, "link": {}})
     resp = requests.post(KAKAO_MEMO_URL, headers=headers, data={"template_object": template}, timeout=10)
+    if resp.status_code != 200:
+        print(f"[kakao] 발송 실패: status={resp.status_code} body={resp.text[:300]}", file=sys.stderr)
     return resp.status_code == 200
 
 
@@ -69,8 +72,8 @@ def send_notification(message: str, subject: str = "종목 알림") -> str:
             access_token = refresh_kakao_access_token()
             if send_kakao_memo(message, access_token):
                 return "kakao"
-        except requests.RequestException:
-            pass
+        except (requests.RequestException, KeyError) as exc:
+            print(f"[kakao] 토큰 갱신/발송 중 오류로 이메일로 대체: {exc!r}", file=sys.stderr)
 
     if os.environ.get("EMAIL_SENDER") and os.environ.get("EMAIL_APP_PASSWORD"):
         send_email(subject, message)
