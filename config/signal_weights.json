@@ -4,5 +4,5 @@
   "news_earnings_guidance": 1.0,
   "news_regulatory_legal_political": 1.0,
   "news_analyst_rating": 1.0,
-  "news_other": 1.0
+  "news_other": 0.9
 }
