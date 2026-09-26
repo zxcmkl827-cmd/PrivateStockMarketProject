@@ -1,8 +1,8 @@
 {
   "price_decline": 1.0,
   "price_decline_strong": 2.0,
-  "news_earnings_guidance": 1.0,
+  "news_earnings_guidance": 0.9,
   "news_regulatory_legal_political": 1.0,
   "news_analyst_rating": 1.0,
-  "news_other": 0.9
+  "news_other": 0.81
 }

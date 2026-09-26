@@ -1,1 +1,2 @@
 {"date": "2026-09-24", "changes": [{"basis": "news_other", "old_weight": 1.0, "new_weight": 0.9, "hit_rate": 0.0, "sample_size": 14}]}
+{"date": "2026-09-26", "changes": [{"basis": "news_earnings_guidance", "old_weight": 1.0, "new_weight": 0.9, "hit_rate": 0.1, "sample_size": 10}, {"basis": "news_other", "old_weight": 0.9, "new_weight": 0.81, "hit_rate": 0.194, "sample_size": 31}]}
