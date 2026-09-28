@@ -57,7 +57,7 @@
 {"date": "2026-09-24", "ticker": "AMZN", "grade": "유지관찰", "bases": ["news_other"], "score": 0.9, "baseline_close": 249.38, "1day": "과잉감지", "1day_pct": 0.12, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-24", "ticker": "ORCL", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.9, "baseline_close": 139.54, "1day": "과잉감지", "1day_pct": -1.75, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-24", "ticker": "MCD", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.9, "baseline_close": 237.02, "1day": "과잉감지", "1day_pct": -0.22, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-09-25", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["news_other", "news_regulatory_legal_political"], "score": 1.81, "baseline_close": 343.92, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-09-25", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["news_regulatory_legal_political"], "score": 1.0, "baseline_close": 343.92, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-25", "ticker": "MSFT", "grade": "유지관찰", "bases": ["news_other"], "score": 0.81, "baseline_close": 516.17, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-25", "ticker": "PEP", "grade": "매도", "bases": ["price_decline", "news_earnings_guidance", "news_other"], "score": null, "baseline_close": 128.63, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-25", "ticker": "COST", "grade": "유지관찰", "bases": ["news_other"], "score": 0.81, "baseline_close": 922.77, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
@@ -65,3 +65,4 @@
 {"date": "2026-09-25", "ticker": "AMZN", "grade": "유지관찰", "bases": ["news_earnings_guidance"], "score": 0.9, "baseline_close": 249.67, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-25", "ticker": "ORCL", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.81, "baseline_close": 137.1, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-09-25", "ticker": "MCD", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.81, "baseline_close": 236.5, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-09-25", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.81, "baseline_close": 630.63, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
