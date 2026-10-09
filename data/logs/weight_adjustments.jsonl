@@ -2,3 +2,4 @@
 {"date": "2026-09-26", "changes": [{"basis": "news_earnings_guidance", "old_weight": 1.0, "new_weight": 0.9, "hit_rate": 0.1, "sample_size": 10}, {"basis": "news_other", "old_weight": 0.9, "new_weight": 0.81, "hit_rate": 0.194, "sample_size": 31}]}
 {"date": "2026-10-02", "changes": [{"basis": "news_other", "old_weight": 0.81, "new_weight": 0.729, "hit_rate": 0.25, "sample_size": 44}]}
 {"date": "2026-10-06", "changes": [{"basis": "news_other", "old_weight": 0.729, "new_weight": 0.6561, "hit_rate": 0.321, "sample_size": 56}]}
+{"date": "2026-10-09", "changes": [{"basis": "news_other", "old_weight": 0.6561, "new_weight": 0.5905, "hit_rate": 0.186, "sample_size": 70}]}
