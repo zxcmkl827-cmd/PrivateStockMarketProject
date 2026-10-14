@@ -5,3 +5,4 @@
 {"date": "2026-10-09", "changes": [{"basis": "news_other", "old_weight": 0.6561, "new_weight": 0.5905, "hit_rate": 0.186, "sample_size": 70}]}
 {"date": "2026-10-10", "changes": [{"basis": "news_earnings_guidance", "old_weight": 0.9, "new_weight": 0.81, "hit_rate": 0.2, "sample_size": 20}]}
 {"date": "2026-10-13", "changes": [{"basis": "news_other", "old_weight": 0.5905, "new_weight": 0.5315, "hit_rate": 0.2, "sample_size": 80}]}
+{"date": "2026-10-14", "changes": [{"basis": "price_decline", "old_weight": 1.0, "new_weight": 0.9, "hit_rate": 0.2, "sample_size": 10}, {"basis": "news_regulatory_legal_political", "old_weight": 1.0, "new_weight": 0.9, "hit_rate": 0.0, "sample_size": 10}]}
