@@ -16,3 +16,4 @@
 {"date": "2026-11-05", "changes": [{"basis": "news_other", "old_weight": 0.2825, "new_weight": 0.2542, "hit_rate": 0.297, "sample_size": 165}]}
 {"date": "2026-11-07", "changes": [{"basis": "news_earnings_guidance", "old_weight": 0.6561, "new_weight": 0.5905, "hit_rate": 0.264, "sample_size": 53}]}
 {"date": "2026-11-10", "changes": [{"basis": "news_other", "old_weight": 0.2542, "new_weight": 0.2288, "hit_rate": 0.316, "sample_size": 177}]}
+{"date": "2026-11-12", "changes": [{"basis": "news_other", "old_weight": 0.2288, "new_weight": 0.2059, "hit_rate": 0.316, "sample_size": 187}]}
