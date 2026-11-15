@@ -292,7 +292,8 @@
 {"date": "2026-11-11", "ticker": "ORCL", "grade": "유지관찰", "bases": ["price_decline_strong"], "score": 1.8, "baseline_close": 128.38, "1day": "과잉감지", "1day_pct": -0.99, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-11", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2059, "baseline_close": 274.8, "1day": "과잉감지", "1day_pct": -0.43, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-11", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2059, "baseline_close": 552.9, "1day": "과잉감지", "1day_pct": 5.86, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-13", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["news_regulatory_legal_political"], "score": 0.81, "baseline_close": 295.77, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-13", "ticker": "MSFT", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2059, "baseline_close": 523.88, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-13", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_analyst_rating", "news_other"], "score": 1.1059, "baseline_close": 145.44, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-13", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2059, "baseline_close": 534.06, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-13", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["news_earnings_guidance", "news_other"], "score": 0.7905, "baseline_close": 295.77, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-13", "ticker": "MSFT", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 523.88, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-13", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_analyst_rating", "news_other"], "score": 1.1, "baseline_close": 145.44, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-13", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 534.06, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-13", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 271.97, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
