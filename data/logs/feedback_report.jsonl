@@ -297,3 +297,4 @@
 {"date": "2026-11-13", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_analyst_rating", "news_other"], "score": 1.1, "baseline_close": 145.44, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-13", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 534.06, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-13", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 271.97, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-13", "ticker": "TSLA", "grade": "유지관찰", "bases": ["news_regulatory_legal_political"], "score": 0.81, "baseline_close": 390.22, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
