@@ -316,14 +316,14 @@
 {"date": "2026-11-18", "ticker": "AMZN", "grade": "유지관찰", "bases": ["news_earnings_guidance", "news_other"], "score": 0.7315, "baseline_close": 267.74, "1day": "적중", "1day_pct": -3.87, "1week": "적중", "1week_pct": -8.71, "2week": "대기중"}
 {"date": "2026-11-18", "ticker": "ORCL", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.1, "baseline_close": 113.89, "1day": "적중", "1day_pct": -2.92, "1week": "적중", "1week_pct": -8.79, "2week": "대기중"}
 {"date": "2026-11-18", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 274.03, "1day": "과잉감지", "1day_pct": -0.61, "1week": "과잉감지", "1week_pct": 3.46, "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 272.66, "1day": "적중", "1day_pct": -2.7, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "MSFT", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.1, "baseline_close": 498.3, "1day": "적중", "1day_pct": -2.77, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_earnings_guidance", "news_other"], "score": 0.7315, "baseline_close": 139.0, "1day": "과잉감지", "1day_pct": 1.11, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "TSLA", "grade": "유지관찰", "bases": ["news_earnings_guidance", "news_other"], "score": 0.7315, "baseline_close": 374.41, "1day": "적중", "1day_pct": -7.64, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 489.19, "1day": "적중", "1day_pct": -13.25, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "AMZN", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 257.37, "1day": "적중", "1day_pct": -4.1, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "ORCL", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 110.57, "1day": "적중", "1day_pct": -8.48, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-19", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 272.35, "1day": "과잉감지", "1day_pct": 0.33, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 272.66, "1day": "적중", "1day_pct": -2.7, "1week": "과잉감지", "1week_pct": 0.84, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "MSFT", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.1, "baseline_close": 498.3, "1day": "적중", "1day_pct": -2.77, "1week": "과잉감지", "1week_pct": -1.09, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_earnings_guidance", "news_other"], "score": 0.7315, "baseline_close": 139.0, "1day": "과잉감지", "1day_pct": 1.11, "1week": "과잉감지", "1week_pct": 4.03, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "TSLA", "grade": "유지관찰", "bases": ["news_earnings_guidance", "news_other"], "score": 0.7315, "baseline_close": 374.41, "1day": "적중", "1day_pct": -7.64, "1week": "과잉감지", "1week_pct": 6.83, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "AMD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 489.19, "1day": "적중", "1day_pct": -13.25, "1week": "적중", "1week_pct": -13.22, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "AMZN", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 257.37, "1day": "적중", "1day_pct": -4.1, "1week": "과잉감지", "1week_pct": -1.26, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "ORCL", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 110.57, "1day": "적중", "1day_pct": -8.48, "1week": "적중", "1week_pct": -3.11, "2week": "대기중"}
+{"date": "2026-11-19", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 272.35, "1day": "과잉감지", "1day_pct": 0.33, "1week": "과잉감지", "1week_pct": 3.77, "2week": "대기중"}
 {"date": "2026-11-20", "ticker": "GOOGL", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.1, "baseline_close": 265.29, "1day": "과잉감지", "1day_pct": 6.34, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-20", "ticker": "MSFT", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 484.52, "1day": "과잉감지", "1day_pct": 1.65, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-20", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_analyst_rating", "news_earnings_guidance", "news_other"], "score": 1.6315, "baseline_close": 140.54, "1day": "과잉감지", "1day_pct": -0.23, "1week": "대기중", "2week": "대기중"}
@@ -349,12 +349,18 @@
 {"date": "2026-11-24", "ticker": "AMD", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 413.27, "1day": "과잉감지", "1day_pct": -1.75, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-24", "ticker": "AMZN", "grade": "매도", "bases": ["price_decline", "news_earnings_guidance", "news_other"], "score": null, "baseline_close": 252.29, "1day": "적중", "1day_pct": -3.12, "1week": "대기중", "2week": "대기중"}
 {"date": "2026-11-24", "ticker": "ORCL", "grade": "유지관찰", "bases": ["price_decline", "news_other"], "score": 1.1, "baseline_close": 109.5, "1day": "적중", "1day_pct": -5.13, "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "GOOGL", "grade": "매도", "bases": ["price_decline", "news_other", "news_regulatory_legal_political"], "score": null, "baseline_close": 273.1, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "MSFT", "grade": "매도", "bases": ["price_decline", "news_earnings_guidance"], "score": null, "baseline_close": 489.93, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 143.93, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "COST", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 1086.81, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "TSLA", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 380.14, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "AMD", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 406.03, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "AMZN", "grade": "매도", "bases": ["price_decline_strong", "news_earnings_guidance", "news_other"], "score": null, "baseline_close": 244.43, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "ORCL", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 103.88, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
-{"date": "2026-11-25", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 283.5, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "GOOGL", "grade": "매도", "bases": ["price_decline", "news_other", "news_regulatory_legal_political"], "score": null, "baseline_close": 273.1, "1day": "과잉감지", "1day_pct": 0.68, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "MSFT", "grade": "매도", "bases": ["price_decline", "news_earnings_guidance"], "score": null, "baseline_close": 489.93, "1day": "과잉감지", "1day_pct": 0.6, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 143.93, "1day": "과잉감지", "1day_pct": 0.47, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "COST", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 1086.81, "1day": "과잉감지", "1day_pct": 1.01, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "TSLA", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 380.14, "1day": "과잉감지", "1day_pct": 5.22, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "AMD", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 406.03, "1day": "과잉감지", "1day_pct": 4.56, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "AMZN", "grade": "매도", "bases": ["price_decline_strong", "news_earnings_guidance", "news_other"], "score": null, "baseline_close": 244.43, "1day": "과잉감지", "1day_pct": 3.96, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "ORCL", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 103.88, "1day": "과잉감지", "1day_pct": 3.13, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-25", "ticker": "MCD", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 283.5, "1day": "과잉감지", "1day_pct": -0.31, "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-27", "ticker": "GOOGL", "grade": "매도", "bases": ["price_decline", "news_other", "news_regulatory_legal_political"], "score": null, "baseline_close": 274.96, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-27", "ticker": "MSFT", "grade": "매도", "bases": ["price_decline", "news_earnings_guidance", "news_other"], "score": null, "baseline_close": 492.85, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-27", "ticker": "PEP", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 144.6, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-27", "ticker": "TSLA", "grade": "유지관찰", "bases": ["news_other"], "score": 0.2, "baseline_close": 400.0, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-27", "ticker": "AMD", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 424.54, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
+{"date": "2026-11-27", "ticker": "ORCL", "grade": "비중축소", "bases": ["price_decline_strong", "news_other"], "score": 2.18, "baseline_close": 107.13, "1day": "대기중", "1week": "대기중", "2week": "대기중"}
